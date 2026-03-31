@@ -4,60 +4,61 @@ import { apiBasePath, appName } from '@debugpath/contracts';
 import PublicLayout from '../layouts/PublicLayout.astro';
 ---
 
-<PublicLayout title={`${appName} | Browser-first debug workspaces`}>
+<PublicLayout title={`${appName} | debugpath.dev investigation workspace`}>
   <section class="hero page-grid">
     <div>
-      <p class="kicker">Phase 1 skeleton</p>
+      <p class="kicker">Phase 3 underway</p>
       <h1>Turn messy incident evidence into one coherent investigation surface.</h1>
       <p class="lead">
-        DebugPath starts with Astro-owned routes, an Elysia API, shared Zod contracts, and a local
-        platform that already runs behind Caddy.
+        DebugPath is a browser-first workspace for production investigations on debugpath.dev. The
+        app now has account registration, session-backed sign in, a personal workspace default, and
+        an Astro-owned investigation shell.
       </p>
     </div>
     <div class="badge-row">
       <div class="badge">
-        <span class="label">Reverse proxy</span>
-        <strong>Caddy on localhost:8080</strong>
+        <span class="label">Primary entrypoint</span>
+        <strong>debugpath.dev via Caddy</strong>
       </div>
       <div class="badge">
         <span class="label">API base</span>
         <strong>{apiBasePath}</strong>
       </div>
       <div class="badge">
-        <span class="label">Storage lane</span>
+        <span class="label">Current data layer</span>
         <strong>PostgreSQL + MinIO</strong>
       </div>
     </div>
   </section>
 
   <section class="page-grid columns-2">
-    <article class="panel">
-      <p class="kicker">Unauthenticated shell</p>
-      <h2>Entry points stay explicit</h2>
+    <article class="panel stack">
+      <p class="kicker">Live now</p>
+      <h2>Auth and investigation shell</h2>
       <p class="lead">
-        The public surface is intentionally spare. Login, product framing, and future share links can
-        live here without turning the app into a client-heavy shell.
+        Sign in, land in a personal workspace, create an investigation, and keep the page shell on
+        the server-rendered Astro side of the boundary.
       </p>
       <div class="link-list">
-        <a class="button-link primary" href="/app">Open the authenticated placeholder</a>
-        <a class="button-link" href={apiBasePath + '/health'}>Check the API through Caddy</a>
+        <a class="button-link primary" href="/login">Sign in or create an account</a>
+        <a class="button-link" href="/app">Open the investigation shell</a>
       </div>
     </article>
 
     <article class="panel">
-      <p class="kicker">Current stack choices</p>
+      <p class="kicker">Next build lane</p>
       <div class="stat-list">
         <div class="stat">
-          <span class="label">Frontend ownership</span>
-          <strong>Astro routes, layouts, and first render</strong>
+          <span class="label">Artifact ingestion</span>
+          <strong>Multipart upload, paste flows, and object storage retention</strong>
         </div>
         <div class="stat">
-          <span class="label">Interactive islands</span>
-          <strong>Vue deferred until timeline or bundle state earns it</strong>
+          <span class="label">Timeline</span>
+          <strong>Normalization pipeline and unified investigation event view</strong>
         </div>
         <div class="stat">
-          <span class="label">Contracts</span>
-          <strong>Shared Zod schemas from packages/contracts</strong>
+          <span class="label">Sharing</span>
+          <strong>Notes, bundles, and controlled collaboration later in the build</strong>
         </div>
       </div>
     </article>

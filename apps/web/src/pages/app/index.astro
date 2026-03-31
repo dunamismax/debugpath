@@ -1,52 +1,156 @@
 ---
-import { apiBasePath } from '@debugpath/contracts';
+import { appShellResponseSchema } from '@debugpath/contracts';
 
 import AppLayout from '../../layouts/AppLayout.astro';
+import { fetchFromDebugPathApi } from '../../lib/server/api';
+
+const response = await fetchFromDebugPathApi(Astro, '/api/v1/app-shell');
+
+if (response.status === 401) {
+  return Astro.redirect(`/login?redirectTo=${encodeURIComponent('/app')}&error=auth_required`);
+}
+
+if (!response.ok) {
+  throw new Error(`Failed to load DebugPath app shell: ${response.status}`);
+}
+
+const payload = appShellResponseSchema.parse(await response.json());
+const { currentUser, currentWorkspace, investigations, workspaces } = payload.data;
+const successMessage =
+  Astro.url.searchParams.get('archived') === '1' ? 'Investigation archived.' : null;
 ---
 
-<AppLayout title="DebugPath | Investigation shell placeholder">
+<AppLayout title="DebugPath | Investigations" currentUser={currentUser} currentWorkspace={currentWorkspace}>
   <section class="hero page-grid">
     <div>
-      <p class="kicker">Authenticated shell placeholder</p>
-      <h1>Investigation workspace frame is live.</h1>
+      <p class="kicker">Workspace shell</p>
+      <h1>{currentWorkspace.name}</h1>
       <p class="lead">
-        The first real investigation view will hang off this shell. For now it proves Astro owns the
-        route, the layout, and the first page render before auth, data, and timeline work arrive.
+        This is the first real authenticated DebugPath surface. Investigations render on Astro
+        pages, auth stays server-backed, and the workspace defaults cleanly for the signed-in user.
       </p>
     </div>
     <div class="badge-row">
       <div class="badge">
-        <span class="label">Artifacts</span>
-        <strong>Upload rail comes in Phase 4</strong>
+        <span class="label">Signed-in user</span>
+        <strong>{currentUser.displayName ?? currentUser.email}</strong>
       </div>
       <div class="badge">
-        <span class="label">Timeline</span>
-        <strong>Unified event surface starts in Phase 5</strong>
+        <span class="label">Workspace role</span>
+        <strong>{currentWorkspace.role}</strong>
       </div>
       <div class="badge">
-        <span class="label">API contract</span>
-        <strong>{apiBasePath + '/health'}</strong>
+        <span class="label">Investigations</span>
+        <strong>{investigations.length}</strong>
       </div>
     </div>
   </section>
 
-  <section class="page-grid columns-2">
-    <article class="tile">
-      <p class="kicker">Ready now</p>
-      <ul>
-        <li>Astro-owned app shell and placeholder navigation</li>
-        <li>Elysia API under a versioned base path</li>
-        <li>Shared Zod contracts compiled across packages</li>
-      </ul>
+  {successMessage && (
+    <div class="notice success">
+      <strong>{successMessage}</strong>
+    </div>
+  )}
+
+  <section class="page-grid columns-2 app-columns">
+    <article class="panel stack">
+      <p class="kicker">Create investigation</p>
+      <h2>Capture a new incident thread</h2>
+      <form action="/api/v1/investigations" method="post" class="stack form-grid">
+        <input type="hidden" name="redirectTo" value="/app" />
+        <label>
+          <span>Title</span>
+          <input type="text" name="title" minlength="3" maxlength="140" required />
+        </label>
+        <label>
+          <span>Summary</span>
+          <textarea name="summary" rows="5" maxlength="4000" placeholder="What broke, where, and what makes it worth preserving?"></textarea>
+        </label>
+        <label>
+          <span>Severity</span>
+          <select name="severity">
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </label>
+        <button class="button-link primary button-reset button-fill" type="submit">Create investigation</button>
+      </form>
     </article>
 
-    <article class="tile">
-      <p class="kicker">Next</p>
-      <ul>
-        <li>SQL migrations and database access layer</li>
-        <li>Workspace membership and investigation CRUD</li>
-        <li>Artifact ingestion backed by object storage</li>
-      </ul>
+    <article class="panel stack">
+      <p class="kicker">Accessible workspaces</p>
+      <h2>Current workspace default</h2>
+      <p class="lead">
+        Phase 3 currently defaults to your first accessible workspace. Workspace switching can land
+        later without moving page ownership away from Astro.
+      </p>
+      <div class="stack compact">
+        {workspaces.map((workspace) => (
+          <div class:list={['badge', workspace.id === currentWorkspace.id && 'badge-selected']}>
+            <span class="label">{workspace.role}</span>
+            <strong>{workspace.name}</strong>
+            <span class="muted-inline">{workspace.slug}</span>
+          </div>
+        ))}
+      </div>
     </article>
+  </section>
+
+  <section class="page-grid stack-lg">
+    <div class="section-heading">
+      <div>
+        <p class="kicker">Investigations</p>
+        <h2>Current incident threads</h2>
+      </div>
+    </div>
+
+    {investigations.length === 0 ? (
+      <article class="panel stack">
+        <h3>No investigations yet</h3>
+        <p class="lead">
+          Create the first incident thread for this workspace. Artifact ingestion and timeline views
+          will hang off this shell in the next build phases.
+        </p>
+      </article>
+    ) : (
+      <div class="card-grid">
+        {investigations.map((investigation) => (
+          <article class="tile stack">
+            <div class="stack compact">
+              <p class="kicker">{investigation.status}</p>
+              <h3>{investigation.title}</h3>
+              <p class="lead card-summary">
+                {investigation.summary ?? 'No summary yet. Use the edit surface to add investigator context.'}
+              </p>
+            </div>
+            <div class="meta-grid">
+              <div>
+                <span class="label">Severity</span>
+                <strong>{investigation.severity ?? 'unset'}</strong>
+              </div>
+              <div>
+                <span class="label">Slug</span>
+                <strong>{investigation.slug}</strong>
+              </div>
+              <div>
+                <span class="label">Updated</span>
+                <strong>{new Date(investigation.updatedAt).toLocaleString()}</strong>
+              </div>
+            </div>
+            <div class="link-list inline-actions">
+              <a class="button-link" href={`/app/investigations/${investigation.id}`}>Open</a>
+              {investigation.status !== 'archived' && (
+                <form action={`/api/v1/investigations/${investigation.id}/archive`} method="post" class="inline-form">
+                  <input type="hidden" name="redirectTo" value="/app" />
+                  <button class="button-link button-reset" type="submit">Archive</button>
+                </form>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+    )}
   </section>
 </AppLayout>

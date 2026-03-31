@@ -1,15 +1,89 @@
 ---
 import PublicLayout from '../layouts/PublicLayout.astro';
+
+const redirectTo = Astro.url.searchParams.get('redirectTo') ?? '/app';
+const error = Astro.url.searchParams.get('error');
+const loggedOut = Astro.url.searchParams.get('logged_out') === '1';
+
+const errorMessages: Record<string, string> = {
+  account_exists: 'That email already has an account. Sign in instead.',
+  auth_required: 'Sign in to open the DebugPath investigation shell.',
+  invalid_credentials: 'The email or password did not match a valid account.',
+  invalid_registration:
+    'Create-account requests need a display name, a valid email, and a password with at least 12 characters.',
+};
+
+const notice = loggedOut
+  ? 'You are signed out.'
+  : error
+    ? (errorMessages[error] ?? 'Something blocked the sign-in flow.')
+    : null;
 ---
 
-<PublicLayout title="DebugPath | Login placeholder">
-  <section class="panel stack">
-    <p class="kicker">Auth lands in Phase 3</p>
-    <h1>Login flow placeholder</h1>
-    <p class="lead">
-      This route exists now so the unauthenticated shell is explicit before real auth work starts.
-      Phase 3 will decide the launch auth method, wire sessions, and replace this placeholder.
-    </p>
-    <pre>Planned surface: email/password or magic-link decision pending BUILD.md resolution.</pre>
+<PublicLayout title="DebugPath | Sign in">
+  <section class="hero page-grid">
+    <div>
+      <p class="kicker">Phase 3 shell</p>
+      <h1>Sign in to DebugPath.</h1>
+      <p class="lead">
+        Sessions are server-backed, the first workspace defaults to a personal workspace, and the
+        initial investigation shell stays Astro-owned.
+      </p>
+      <div class="stack compact">
+        <div class="badge">
+          <span class="label">Local seed account</span>
+          <strong>owner@debugpath.dev / debugpath-dev-password</strong>
+        </div>
+        <div class="badge">
+          <span class="label">Target host</span>
+          <strong>debugpath.dev</strong>
+        </div>
+      </div>
+    </div>
+    {notice && (
+      <div class:list={[loggedOut ? 'notice success' : 'notice danger']}>
+        <strong>{notice}</strong>
+      </div>
+    )}
+  </section>
+
+  <section class="page-grid columns-2 auth-grid">
+    <article class="panel stack">
+      <p class="kicker">Sign in</p>
+      <h2>Return to your investigations</h2>
+      <form action="/api/v1/auth/login" method="post" class="stack form-grid">
+        <input type="hidden" name="redirectTo" value={redirectTo} />
+        <label>
+          <span>Email</span>
+          <input type="email" name="email" autocomplete="email" required />
+        </label>
+        <label>
+          <span>Password</span>
+          <input type="password" name="password" autocomplete="current-password" minlength="12" required />
+        </label>
+        <button class="button-link primary button-reset button-fill" type="submit">Sign in</button>
+      </form>
+    </article>
+
+    <article class="panel stack">
+      <p class="kicker">Create account</p>
+      <h2>Start a personal workspace</h2>
+      <form action="/api/v1/auth/register" method="post" class="stack form-grid">
+        <input type="hidden" name="redirectTo" value={redirectTo} />
+        <label>
+          <span>Display name</span>
+          <input type="text" name="displayName" autocomplete="name" maxlength="80" required />
+        </label>
+        <label>
+          <span>Email</span>
+          <input type="email" name="email" autocomplete="email" required />
+        </label>
+        <label>
+          <span>Password</span>
+          <input type="password" name="password" autocomplete="new-password" minlength="12" required />
+        </label>
+        <button class="button-link button-reset button-fill" type="submit">Create account</button>
+      </form>
+    </article>
   </section>
 </PublicLayout>

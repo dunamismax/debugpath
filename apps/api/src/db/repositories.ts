@@ -20,6 +20,7 @@ export interface UserRecord {
   id: string;
   email: string;
   displayName: string | null;
+  passwordHash: string | null;
   createdAt: string;
   updatedAt: string;
   lastLoginAt: string | null;
@@ -32,6 +33,10 @@ export interface WorkspaceRecord {
   ownerUserId: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AccessibleWorkspaceRecord extends WorkspaceRecord {
+  role: WorkspaceRoleRecord;
 }
 
 export interface WorkspaceMembershipRecord {
@@ -125,9 +130,43 @@ export interface BundleShareLinkRecord {
   updatedAt: string;
 }
 
+export interface UserSessionRecord {
+  id: string;
+  userId: string;
+  tokenHash: string;
+  expiresAt: string;
+  lastSeenAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AuthenticatedSessionRecord extends UserSessionRecord {
+  email: string;
+  displayName: string | null;
+}
+
+export interface AuditEventRecord {
+  id: string;
+  workspaceId: string | null;
+  actorUserId: string | null;
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface UpsertUserInput {
   email: string;
   displayName?: string | null;
+}
+
+export interface CreateUserInput {
+  email: string;
+  displayName?: string | null;
+  passwordHash: string;
 }
 
 export interface UpsertWorkspaceInput {
@@ -146,6 +185,14 @@ export interface UpsertInvestigationInput {
   workspaceId: string;
   createdByUserId: string;
   slug: string;
+  title: string;
+  summary?: string | null;
+  status?: InvestigationStatusRecord;
+  severity?: InvestigationSeverityRecord;
+  archivedAt?: string | null;
+}
+
+export interface UpdateInvestigationInput {
   title: string;
   summary?: string | null;
   status?: InvestigationStatusRecord;
@@ -207,6 +254,23 @@ export interface UpsertBundleShareLinkInput {
   revokedAt?: string | null;
 }
 
+export interface CreateUserSessionInput {
+  userId: string;
+  tokenHash: string;
+  expiresAt: string;
+}
+
+export interface CreateAuditEventInput {
+  workspaceId?: string | null;
+  actorUserId?: string | null;
+  action: string;
+  targetType: string;
+  targetId?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
 export const upsertUser = async (db: DatabaseExecutor, input: UpsertUserInput) => {
   const rows = await db<UserRecord[]>`
     insert into users (email, display_name)
@@ -219,12 +283,108 @@ export const upsertUser = async (db: DatabaseExecutor, input: UpsertUserInput) =
       id,
       email,
       display_name as "displayName",
+      password_hash as "passwordHash",
       created_at as "createdAt",
       updated_at as "updatedAt",
       last_login_at as "lastLoginAt"
   `;
 
   return expectOne(rows, 'user upsert');
+};
+
+export const createUser = async (db: DatabaseExecutor, input: CreateUserInput) => {
+  const rows = await db<UserRecord[]>`
+    insert into users (email, display_name, password_hash)
+    values (${input.email}, ${input.displayName ?? null}, ${input.passwordHash})
+    returning
+      id,
+      email,
+      display_name as "displayName",
+      password_hash as "passwordHash",
+      created_at as "createdAt",
+      updated_at as "updatedAt",
+      last_login_at as "lastLoginAt"
+  `;
+
+  return expectOne(rows, 'user create');
+};
+
+export const findUserByEmail = async (db: DatabaseExecutor, email: string) => {
+  const rows = await db<UserRecord[]>`
+    select
+      id,
+      email,
+      display_name as "displayName",
+      password_hash as "passwordHash",
+      created_at as "createdAt",
+      updated_at as "updatedAt",
+      last_login_at as "lastLoginAt"
+    from users
+    where email = ${email}
+    limit 1
+  `;
+
+  return maybeOne(rows);
+};
+
+export const findUserById = async (db: DatabaseExecutor, userId: string) => {
+  const rows = await db<UserRecord[]>`
+    select
+      id,
+      email,
+      display_name as "displayName",
+      password_hash as "passwordHash",
+      created_at as "createdAt",
+      updated_at as "updatedAt",
+      last_login_at as "lastLoginAt"
+    from users
+    where id = ${userId}
+    limit 1
+  `;
+
+  return maybeOne(rows);
+};
+
+export const setUserPasswordHash = async (
+  db: DatabaseExecutor,
+  userId: string,
+  passwordHash: string
+) => {
+  const rows = await db<UserRecord[]>`
+    update users
+    set password_hash = ${passwordHash},
+        updated_at = now()
+    where id = ${userId}
+    returning
+      id,
+      email,
+      display_name as "displayName",
+      password_hash as "passwordHash",
+      created_at as "createdAt",
+      updated_at as "updatedAt",
+      last_login_at as "lastLoginAt"
+  `;
+
+  return expectOne(rows, 'user password update');
+};
+
+export const updateUserLastLoginAt = async (db: DatabaseExecutor, userId: string) => {
+  const rows = await db<UserRecord[]>`
+    update users
+    set last_login_at = now(),
+        updated_at = now()
+    where id = ${userId}
+    returning
+      id,
+      email,
+      display_name as "displayName",
+      password_hash as "passwordHash",
+      created_at as "createdAt",
+      updated_at as "updatedAt",
+      last_login_at as "lastLoginAt"
+  `;
+
+  return expectOne(rows, 'user last login update');
 };
 
 export const upsertWorkspace = async (db: DatabaseExecutor, input: UpsertWorkspaceInput) => {
@@ -287,6 +447,33 @@ export const findWorkspaceBySlug = async (db: DatabaseExecutor, slug: string) =>
   return maybeOne(rows);
 };
 
+export const listWorkspacesForUser = async (db: DatabaseExecutor, userId: string) =>
+  db<AccessibleWorkspaceRecord[]>`
+    select
+      w.id,
+      w.slug,
+      w.name,
+      w.owner_user_id as "ownerUserId",
+      wm.role,
+      w.created_at as "createdAt",
+      w.updated_at as "updatedAt"
+    from workspace_memberships wm
+    inner join workspaces w on w.id = wm.workspace_id
+    where wm.user_id = ${userId}
+    order by
+      case wm.role
+        when 'owner' then 0
+        when 'editor' then 1
+        else 2
+      end asc,
+      w.created_at asc
+  `;
+
+export const findDefaultWorkspaceForUser = async (db: DatabaseExecutor, userId: string) => {
+  const rows = await listWorkspacesForUser(db, userId);
+  return rows[0] ?? null;
+};
+
 export const upsertInvestigation = async (
   db: DatabaseExecutor,
   input: UpsertInvestigationInput
@@ -337,6 +524,54 @@ export const upsertInvestigation = async (
   return expectOne(rows, 'investigation upsert');
 };
 
+export const createInvestigationForWorkspace = async (
+  db: DatabaseExecutor,
+  input: UpsertInvestigationInput
+) => {
+  const rows = await db<InvestigationRecord[]>`
+    insert into investigations (
+      workspace_id,
+      created_by_user_id,
+      slug,
+      title,
+      summary,
+      status,
+      severity,
+      archived_at
+    )
+    select
+      ${input.workspaceId},
+      ${input.createdByUserId},
+      ${input.slug},
+      ${input.title},
+      ${input.summary ?? null},
+      ${input.status ?? 'active'},
+      ${input.severity ?? 'high'},
+      ${input.archivedAt ?? null}
+    where exists (
+      select 1
+      from workspace_memberships
+      where workspace_id = ${input.workspaceId}
+        and user_id = ${input.createdByUserId}
+        and role in ('owner', 'editor')
+    )
+    returning
+      id,
+      workspace_id as "workspaceId",
+      created_by_user_id as "createdByUserId",
+      slug,
+      title,
+      summary,
+      status,
+      severity,
+      archived_at as "archivedAt",
+      created_at as "createdAt",
+      updated_at as "updatedAt"
+  `;
+
+  return maybeOne(rows);
+};
+
 export const listInvestigationsByWorkspace = async (db: DatabaseExecutor, workspaceId: string) =>
   db<InvestigationRecord[]>`
     select
@@ -355,6 +590,138 @@ export const listInvestigationsByWorkspace = async (db: DatabaseExecutor, worksp
     where workspace_id = ${workspaceId}
     order by updated_at desc, created_at desc
   `;
+
+export const listInvestigationsByWorkspaceForUser = async (
+  db: DatabaseExecutor,
+  workspaceId: string,
+  userId: string
+) =>
+  db<InvestigationRecord[]>`
+    select
+      i.id,
+      i.workspace_id as "workspaceId",
+      i.created_by_user_id as "createdByUserId",
+      i.slug,
+      i.title,
+      i.summary,
+      i.status,
+      i.severity,
+      i.archived_at as "archivedAt",
+      i.created_at as "createdAt",
+      i.updated_at as "updatedAt"
+    from investigations i
+    inner join workspace_memberships wm on wm.workspace_id = i.workspace_id
+    where i.workspace_id = ${workspaceId}
+      and wm.user_id = ${userId}
+    order by i.updated_at desc, i.created_at desc
+  `;
+
+export const findInvestigationByIdForUser = async (
+  db: DatabaseExecutor,
+  investigationId: string,
+  userId: string
+) => {
+  const rows = await db<InvestigationRecord[]>`
+    select
+      i.id,
+      i.workspace_id as "workspaceId",
+      i.created_by_user_id as "createdByUserId",
+      i.slug,
+      i.title,
+      i.summary,
+      i.status,
+      i.severity,
+      i.archived_at as "archivedAt",
+      i.created_at as "createdAt",
+      i.updated_at as "updatedAt"
+    from investigations i
+    inner join workspace_memberships wm on wm.workspace_id = i.workspace_id
+    where i.id = ${investigationId}
+      and wm.user_id = ${userId}
+    limit 1
+  `;
+
+  return maybeOne(rows);
+};
+
+export const updateInvestigationByIdForUser = async (
+  db: DatabaseExecutor,
+  investigationId: string,
+  userId: string,
+  input: UpdateInvestigationInput
+) => {
+  const archivedAt =
+    input.status === 'archived'
+      ? (input.archivedAt ?? new Date().toISOString())
+      : (input.archivedAt ?? null);
+
+  const rows = await db<InvestigationRecord[]>`
+    update investigations i
+    set title = ${input.title},
+        summary = ${input.summary ?? null},
+        status = ${input.status ?? 'active'},
+        severity = ${input.severity ?? null},
+        archived_at = ${archivedAt},
+        updated_at = now()
+    where i.id = ${investigationId}
+      and exists (
+        select 1
+        from workspace_memberships wm
+        where wm.workspace_id = i.workspace_id
+          and wm.user_id = ${userId}
+          and wm.role in ('owner', 'editor')
+      )
+    returning
+      i.id,
+      i.workspace_id as "workspaceId",
+      i.created_by_user_id as "createdByUserId",
+      i.slug,
+      i.title,
+      i.summary,
+      i.status,
+      i.severity,
+      i.archived_at as "archivedAt",
+      i.created_at as "createdAt",
+      i.updated_at as "updatedAt"
+  `;
+
+  return maybeOne(rows);
+};
+
+export const archiveInvestigationByIdForUser = async (
+  db: DatabaseExecutor,
+  investigationId: string,
+  userId: string
+) => {
+  const rows = await db<InvestigationRecord[]>`
+    update investigations i
+    set status = 'archived',
+        archived_at = coalesce(i.archived_at, now()),
+        updated_at = now()
+    where i.id = ${investigationId}
+      and exists (
+        select 1
+        from workspace_memberships wm
+        where wm.workspace_id = i.workspace_id
+          and wm.user_id = ${userId}
+          and wm.role in ('owner', 'editor')
+      )
+    returning
+      i.id,
+      i.workspace_id as "workspaceId",
+      i.created_by_user_id as "createdByUserId",
+      i.slug,
+      i.title,
+      i.summary,
+      i.status,
+      i.severity,
+      i.archived_at as "archivedAt",
+      i.created_at as "createdAt",
+      i.updated_at as "updatedAt"
+  `;
+
+  return maybeOne(rows);
+};
 
 export const upsertArtifact = async (db: DatabaseExecutor, input: UpsertArtifactInput) => {
   const rows = await db<ArtifactRecord[]>`
@@ -643,4 +1010,107 @@ export const upsertBundleShareLink = async (
   `;
 
   return expectOne(rows, 'bundle share link upsert');
+};
+
+export const createUserSession = async (db: DatabaseExecutor, input: CreateUserSessionInput) => {
+  const rows = await db<UserSessionRecord[]>`
+    insert into user_sessions (user_id, token_hash, expires_at)
+    values (${input.userId}, ${input.tokenHash}, ${input.expiresAt})
+    returning
+      id,
+      user_id as "userId",
+      token_hash as "tokenHash",
+      expires_at as "expiresAt",
+      last_seen_at as "lastSeenAt",
+      created_at as "createdAt",
+      updated_at as "updatedAt"
+  `;
+
+  return expectOne(rows, 'user session create');
+};
+
+export const findAuthenticatedSessionByTokenHash = async (
+  db: DatabaseExecutor,
+  tokenHash: string
+) => {
+  const rows = await db<AuthenticatedSessionRecord[]>`
+    select
+      s.id,
+      s.user_id as "userId",
+      s.token_hash as "tokenHash",
+      s.expires_at as "expiresAt",
+      s.last_seen_at as "lastSeenAt",
+      s.created_at as "createdAt",
+      s.updated_at as "updatedAt",
+      u.email,
+      u.display_name as "displayName"
+    from user_sessions s
+    inner join users u on u.id = s.user_id
+    where s.token_hash = ${tokenHash}
+      and s.expires_at > now()
+    limit 1
+  `;
+
+  return maybeOne(rows);
+};
+
+export const touchUserSession = async (db: DatabaseExecutor, sessionId: string) => {
+  await db`
+    update user_sessions
+    set last_seen_at = now(),
+        updated_at = now()
+    where id = ${sessionId}
+  `;
+};
+
+export const deleteUserSessionByTokenHash = async (db: DatabaseExecutor, tokenHash: string) => {
+  await db`
+    delete from user_sessions
+    where token_hash = ${tokenHash}
+  `;
+};
+
+export const deleteExpiredUserSessions = async (db: DatabaseExecutor) => {
+  await db`
+    delete from user_sessions
+    where expires_at <= now()
+  `;
+};
+
+export const createAuditEvent = async (db: DatabaseExecutor, input: CreateAuditEventInput) => {
+  const rows = await db<AuditEventRecord[]>`
+    insert into audit_events (
+      workspace_id,
+      actor_user_id,
+      action,
+      target_type,
+      target_id,
+      ip_address,
+      user_agent,
+      metadata
+    )
+    values (
+      ${input.workspaceId ?? null},
+      ${input.actorUserId ?? null},
+      ${input.action},
+      ${input.targetType},
+      ${input.targetId ?? null},
+      ${input.ipAddress ?? null},
+      ${input.userAgent ?? null},
+      ${JSON.stringify(input.metadata ?? {})}::jsonb
+    )
+    returning
+      id,
+      workspace_id as "workspaceId",
+      actor_user_id as "actorUserId",
+      action,
+      target_type as "targetType",
+      target_id as "targetId",
+      ip_address as "ipAddress",
+      user_agent as "userAgent",
+      metadata,
+      created_at as "createdAt"
+  `;
+
+  return expectOne(rows, 'audit event create');
 };

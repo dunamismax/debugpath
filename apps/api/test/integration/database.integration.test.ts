@@ -71,7 +71,7 @@ afterAll(async () => {
   }
 });
 
-test('migrations create the phase 2 tables and rerun without drift', async () => {
+test('migrations create the schema tables through the current phase and rerun without drift', async () => {
   const rerun = await migrateDatabase({ databaseUrl: testDatabaseUrl, quiet: true });
   expect(rerun.applied).toHaveLength(0);
   expect(rerun.skipped).toContain('0001_initial_schema.sql');
@@ -87,6 +87,7 @@ test('migrations create the phase 2 tables and rerun without drift', async () =>
   expect(tableNames).toEqual(
     expect.arrayContaining([
       'artifacts',
+      'audit_events',
       'bundle_artifacts',
       'bundle_notes',
       'bundle_share_links',
@@ -95,6 +96,7 @@ test('migrations create the phase 2 tables and rerun without drift', async () =>
       'investigations',
       'notes',
       'schema_migrations',
+      'user_sessions',
       'users',
       'workspace_memberships',
       'workspaces',

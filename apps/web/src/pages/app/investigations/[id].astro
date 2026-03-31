@@ -1,0 +1,143 @@
+---
+import { investigationDetailResponseSchema } from '@debugpath/contracts';
+
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { fetchFromDebugPathApi } from '../../../lib/server/api';
+
+const { id } = Astro.params;
+
+if (!id) {
+  throw new Error('Investigation id route param is required.');
+}
+
+const shellResponse = await fetchFromDebugPathApi(Astro, '/api/v1/app-shell');
+if (shellResponse.status === 401) {
+  return Astro.redirect(
+    `/login?redirectTo=${encodeURIComponent(Astro.url.pathname)}&error=auth_required`
+  );
+}
+if (!shellResponse.ok) {
+  throw new Error(`Failed to load DebugPath app shell: ${shellResponse.status}`);
+}
+const shellPayload = await shellResponse.json();
+const currentUser = shellPayload.data.currentUser;
+const currentWorkspace = shellPayload.data.currentWorkspace;
+
+const response = await fetchFromDebugPathApi(Astro, `/api/v1/investigations/${id}`);
+if (response.status === 401) {
+  return Astro.redirect(
+    `/login?redirectTo=${encodeURIComponent(Astro.url.pathname)}&error=auth_required`
+  );
+}
+if (response.status === 404) {
+  return Astro.redirect('/app?error=not_found');
+}
+if (!response.ok) {
+  throw new Error(`Failed to load DebugPath investigation: ${response.status}`);
+}
+
+const payload = investigationDetailResponseSchema.parse(await response.json());
+const investigation = payload.data;
+const saved = Astro.url.searchParams.get('saved') === '1';
+---
+
+<AppLayout
+  title={`DebugPath | ${investigation.title}`}
+  currentUser={currentUser}
+  currentWorkspace={currentWorkspace}
+>
+  <section class="hero page-grid">
+    <div>
+      <p class="kicker">Investigation editor</p>
+      <h1>{investigation.title}</h1>
+      <p class="lead">
+        Edit the investigation record without handing page ownership to a client-heavy shell. This
+        is the Phase 3 CRUD surface the later artifact and timeline work will build on.
+      </p>
+    </div>
+    <div class="badge-row">
+      <div class="badge">
+        <span class="label">Status</span>
+        <strong>{investigation.status}</strong>
+      </div>
+      <div class="badge">
+        <span class="label">Severity</span>
+        <strong>{investigation.severity ?? 'unset'}</strong>
+      </div>
+      <div class="badge">
+        <span class="label">Slug</span>
+        <strong>{investigation.slug}</strong>
+      </div>
+    </div>
+  </section>
+
+  {saved && (
+    <div class="notice success">
+      <strong>Investigation changes saved.</strong>
+    </div>
+  )}
+
+  <section class="page-grid columns-2 app-columns">
+    <article class="panel stack">
+      <p class="kicker">Edit</p>
+      <h2>Investigation details</h2>
+      <form action={`/api/v1/investigations/${investigation.id}`} method="post" class="stack form-grid">
+        <input type="hidden" name="redirectTo" value={Astro.url.pathname} />
+        <label>
+          <span>Title</span>
+          <input type="text" name="title" minlength="3" maxlength="140" value={investigation.title} required />
+        </label>
+        <label>
+          <span>Summary</span>
+          <textarea name="summary" rows="8" maxlength="4000">{investigation.summary ?? ''}</textarea>
+        </label>
+        <label>
+          <span>Severity</span>
+          <select name="severity">
+            <option value="" selected={investigation.severity === null}>Unset</option>
+            <option value="critical" selected={investigation.severity === 'critical'}>Critical</option>
+            <option value="high" selected={investigation.severity === 'high'}>High</option>
+            <option value="medium" selected={investigation.severity === 'medium'}>Medium</option>
+            <option value="low" selected={investigation.severity === 'low'}>Low</option>
+          </select>
+        </label>
+        <label>
+          <span>Status</span>
+          <select name="status">
+            <option value="draft" selected={investigation.status === 'draft'}>Draft</option>
+            <option value="active" selected={investigation.status === 'active'}>Active</option>
+            <option value="resolved" selected={investigation.status === 'resolved'}>Resolved</option>
+            <option value="archived" selected={investigation.status === 'archived'}>Archived</option>
+          </select>
+        </label>
+        <button class="button-link primary button-reset button-fill" type="submit">Save changes</button>
+      </form>
+    </article>
+
+    <article class="panel stack">
+      <p class="kicker">Operations</p>
+      <h2>Current shell state</h2>
+      <div class="stat-list">
+        <div class="stat">
+          <span class="label">Created</span>
+          <strong>{new Date(investigation.createdAt).toLocaleString()}</strong>
+        </div>
+        <div class="stat">
+          <span class="label">Updated</span>
+          <strong>{new Date(investigation.updatedAt).toLocaleString()}</strong>
+        </div>
+        <div class="stat">
+          <span class="label">Archived at</span>
+          <strong>{investigation.archivedAt ? new Date(investigation.archivedAt).toLocaleString() : 'Not archived'}</strong>
+        </div>
+      </div>
+      {investigation.status !== 'archived' && (
+        <form action={`/api/v1/investigations/${investigation.id}/archive`} method="post" class="stack inline-form-block">
+          <input type="hidden" name="redirectTo" value="/app" />
+          <button class="button-link button-reset button-fill" type="submit">Archive investigation</button>
+        </form>
+      )}
+      <a class="button-link" href="/app">Back to all investigations</a>
+    </article>
+  </section>
+</AppLayout>

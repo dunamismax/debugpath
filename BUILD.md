@@ -15,7 +15,7 @@ DebugPath is still in active greenfield build mode. This file is the execution a
 - [x] The repo has a root verification surface with `lint`, `typecheck`, `astro:check`, `test`, `build`, and `verify` scripts.
 - [x] Vue is intentionally not part of the initial skeleton.
 - [x] SQL migrations are implemented.
-- [ ] Authentication and workspace membership are implemented.
+- [x] Authentication and workspace membership are implemented.
 - [ ] Artifact ingestion is implemented.
 - [ ] Search, notes, bundles, and sharing are implemented.
 
@@ -145,30 +145,32 @@ DebugPath is still in active greenfield build mode. This file is the execution a
 
 ### Objectives
 
-- [ ] Implement auth, sessions, workspace membership, and investigation CRUD.
-- [ ] Deliver the first usable post-login application shell.
+- [x] Implement auth, sessions, workspace membership, and investigation CRUD.
+- [x] Deliver the first usable post-login application shell.
+
+Current implementation direction for the live shell: email/password auth with server-side sessions and a personal-workspace default.
 
 ### Checklist
 
-- [ ] Login and logout flows.
-- [ ] Session middleware.
-- [ ] Workspace switcher or personal-workspace default.
-- [ ] Astro-rendered investigation list page.
-- [ ] Create, edit, and archive investigation flows.
+- [x] Login and logout flows.
+- [x] Session middleware.
+- [x] Workspace switcher or personal-workspace default.
+- [x] Astro-rendered investigation list page.
+- [x] Create, edit, and archive investigation flows.
 - [ ] Audit trail for important security and sharing actions.
 
 ### Exit criteria
 
-- [ ] Users can sign in, create an investigation, and revisit it later.
-- [ ] Authorization rules prevent cross-workspace access.
-- [ ] Investigation list and shell remain Astro-owned pages.
+- [x] Users can sign in, create an investigation, and revisit it later.
+- [x] Authorization rules prevent cross-workspace access.
+- [x] Investigation list and shell remain Astro-owned pages.
 - [ ] Important account and sharing actions are auditable.
 
 ### Verification
 
 - [ ] Unit tests for auth and permission checks.
 - [ ] Playwright flow for sign in and create investigation.
-- [ ] Negative authorization tests.
+- [x] Negative authorization tests.
 
 ## Phase 4 - Artifact ingestion MVP
 

@@ -17,10 +17,13 @@ const { title = appName } = Astro.props;
   <body>
     <main class="shell">
       <nav>
-        <strong>{appName}</strong>
+        <div class="nav-brand">
+          <strong>{appName}</strong>
+          <span class="nav-subtle">debugpath.dev</span>
+        </div>
         <ul>
           <li><a href="/">Overview</a></li>
-          <li><a href="/login">Login placeholder</a></li>
+          <li><a href="/login">Sign in</a></li>
           <li><a href="/app">Investigation shell</a></li>
         </ul>
       </nav>

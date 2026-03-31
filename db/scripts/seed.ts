@@ -10,6 +10,7 @@ import {
   findNoteByBody,
   findWorkspaceBySlug,
   listInvestigationsByWorkspace,
+  setUserPasswordHash,
   upsertArtifact,
   upsertBundle,
   upsertBundleShareLink,
@@ -48,6 +49,7 @@ const defaultSeedConfig = {
   ].join('\n'),
   ownerDisplayName: 'DebugPath Owner',
   ownerEmail: 'owner@debugpath.dev',
+  ownerPassword: 'debugpath-dev-password',
   parserVersion: 'seed-v1',
   shareToken: 'debugpath-dev-seed-share-token',
   workspaceName: 'DebugPath Lab',
@@ -81,6 +83,12 @@ export const seedDevelopmentDatabase = async ({
         displayName: defaultSeedConfig.ownerDisplayName,
         email: Bun.env.SEED_OWNER_EMAIL ?? defaultSeedConfig.ownerEmail,
       });
+
+      await setUserPasswordHash(
+        tx,
+        owner.id,
+        await Bun.password.hash(Bun.env.SEED_OWNER_PASSWORD ?? defaultSeedConfig.ownerPassword)
+      );
 
       const workspace = await upsertWorkspace(tx, {
         name: Bun.env.SEED_WORKSPACE_NAME ?? defaultSeedConfig.workspaceName,
@@ -194,6 +202,9 @@ export const seedDevelopmentDatabase = async ({
       console.log(`Seeded owner: ${summary.ownerEmail}`);
       console.log(`Workspace: ${workspace?.slug ?? defaultSeedConfig.workspaceSlug}`);
       console.log(`Investigations available: ${investigations.length}`);
+      console.log(
+        `Seed owner password: ${Bun.env.SEED_OWNER_PASSWORD ?? defaultSeedConfig.ownerPassword}`
+      );
       console.log(`Seed artifact id: ${summary.artifactId}`);
       console.log(`Seed bundle share link id: ${summary.shareLinkId}`);
     }

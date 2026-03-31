@@ -6,10 +6,10 @@
   --color-muted: #9fb0c4;
   --color-accent: #67d1ff;
   --color-accent-strong: #98e4ff;
-  --color-border: rgba(152, 228, 255, 0.18);
   --color-success: #54d39b;
   --color-warning: #ffc857;
   --color-danger: #ff7b7b;
+  --color-border: rgba(152, 228, 255, 0.18);
   --shadow-panel: 0 24px 60px rgba(0, 0, 0, 0.28);
   --radius-lg: 24px;
   --radius-md: 16px;
@@ -42,6 +42,13 @@ a {
   color: inherit;
 }
 
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
 .shell {
   width: min(1120px, calc(100vw - 2rem));
   margin: 0 auto;
@@ -50,7 +57,9 @@ a {
 
 .hero,
 .panel,
-.tile {
+.tile,
+.notice,
+.toolbar {
   background: rgba(17, 27, 40, 0.88);
   backdrop-filter: blur(14px);
   border: 1px solid var(--color-border);
@@ -63,18 +72,42 @@ a {
 }
 
 .panel,
-.tile {
+.tile,
+.notice,
+.toolbar {
   border-radius: var(--radius-md);
   padding: var(--space-5);
 }
 
-.page-grid {
+.page-grid,
+.stack,
+.stack-lg,
+.stat-list,
+.badge-row,
+.link-list,
+.form-grid,
+.card-grid,
+.meta-grid {
   display: grid;
+  gap: var(--space-3);
+}
+
+.stack-lg {
   gap: var(--space-5);
 }
 
-.page-grid.columns-2 {
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+.compact {
+  gap: var(--space-2);
+}
+
+.page-grid.columns-2,
+.auth-grid,
+.app-columns {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
 .kicker {
@@ -93,22 +126,20 @@ p {
   margin-top: 0;
 }
 
+h1,
+h2,
+h3 {
+  margin-bottom: var(--space-2);
+}
+
 .lead {
   color: var(--color-muted);
   font-size: 1.08rem;
   line-height: 1.6;
 }
 
-.badge-row,
-.stat-list,
-.link-list,
-.stack {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.badge-row {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+.card-summary {
+  min-height: 6rem;
 }
 
 .badge,
@@ -122,12 +153,20 @@ p {
   background: rgba(9, 16, 25, 0.72);
 }
 
+.badge-selected {
+  border-color: rgba(84, 211, 155, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(84, 211, 155, 0.18);
+}
+
 .badge strong,
 .stat strong {
   font-size: 1rem;
 }
 
-.label {
+.label,
+label span,
+.nav-subtle,
+.muted-inline {
   color: var(--color-muted);
   font-size: 0.9rem;
 }
@@ -140,12 +179,18 @@ nav {
   margin-bottom: var(--space-6);
 }
 
+.nav-brand {
+  display: grid;
+  gap: var(--space-1);
+}
+
 nav ul {
   display: flex;
   gap: var(--space-3);
   padding: 0;
   margin: 0;
   list-style: none;
+  align-items: center;
 }
 
 nav a,
@@ -155,10 +200,83 @@ nav a,
   border-radius: 999px;
   border: 1px solid var(--color-border);
   color: var(--color-accent-strong);
+  background: transparent;
+}
+
+.button-reset {
+  appearance: none;
+  cursor: pointer;
+}
+
+.button-fill {
+  width: 100%;
+  justify-content: center;
 }
 
 .button-link.primary {
   background: linear-gradient(135deg, rgba(103, 209, 255, 0.22), rgba(84, 211, 155, 0.22));
+}
+
+.inline-form,
+.inline-actions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.inline-form-block {
+  width: 100%;
+}
+
+.toolbar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3);
+}
+
+label {
+  display: grid;
+  gap: var(--space-2);
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(152, 228, 255, 0.14);
+  background: rgba(9, 16, 25, 0.95);
+  color: var(--color-text);
+  padding: 0.85rem 1rem;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 8rem;
+}
+
+.notice {
+  margin-top: var(--space-5);
+}
+
+.notice.success {
+  border-color: rgba(84, 211, 155, 0.36);
+}
+
+.notice.danger {
+  border-color: rgba(255, 123, 123, 0.36);
+}
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.meta-grid {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }
 
 code,
@@ -197,5 +315,10 @@ footer {
 
   nav ul {
     flex-wrap: wrap;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

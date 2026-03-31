@@ -1,24 +1,29 @@
 # DebugPath · debugpath.dev
 
+> Production target: <https://debugpath.dev>
+>
 > Self-hostable investigation workspace for turning messy production evidence into one coherent debug surface.
 
 DebugPath is a browser-first debug artifact workspace for production investigations. It is being built as a Bun monorepo with an Astro web app, an Elysia API, shared Zod contracts, PostgreSQL metadata, MinIO-backed artifact storage, and Caddy for local integration parity.
 
-## Phase 2 status
+## Current status
 
-This repo now has the Phase 2 database foundation in place:
+This repo now has the Phase 3 investigation shell underway:
 
-- `apps/web` stays Astro-owned for routes, layouts, and first render.
-- `apps/api` now includes a PostgreSQL access layer with explicit query functions and transaction helpers.
+- `apps/web` serves the public overview, sign-in flow, investigation list, and investigation edit shell as Astro-owned pages.
+- `apps/api` now includes session-backed auth routes, workspace-aware investigation CRUD routes, audit-event writes for account and investigation actions, and the PostgreSQL access layer.
 - `db/migrations/0001_initial_schema.sql` creates the initial relational model for users, workspaces, investigations, artifacts, notes, ingestion jobs, bundles, and share links.
+- `db/migrations/0002_auth_sessions_and_audit.sql` adds password-backed auth, server-side sessions, and audit-event storage.
 - `db/scripts/migrate.ts` applies deterministic SQL migrations with checksum tracking.
-- `db/scripts/seed.ts` creates a rerunnable local seed graph rooted in `debugpath.dev` sample data.
-- `apps/api/test/integration/database.integration.test.ts` verifies migrations, seed idempotency, and relational constraints against PostgreSQL.
+- `db/scripts/seed.ts` creates a rerunnable local seed graph rooted in `debugpath.dev` sample data and a seed login for the local shell.
+- `apps/api/test/integration/auth.integration.test.ts` verifies registration, sign-in, investigation CRUD, and negative authorization checks against PostgreSQL.
+
+Phase 3 is not fully done yet. The app shell is real, but broader audit coverage, browser automation, and the next artifact-ingestion tranche still remain.
 
 ## Vue admission rule
 
 Astro owns routes, layouts, page data loading, and first-rendered investigation shells.
-Vue is **not** part of the initial skeleton.
+Vue is **not** part of the current app shell.
 Only introduce Vue for a specific DebugPath workflow when plain Astro plus HTML becomes awkward because of sustained client-side state, such as:
 
 - dense timeline filtering
@@ -78,7 +83,14 @@ Caddyfile
    bun run db:seed
    ```
 
-5. Stop infrastructure when you are done:
+5. Sign in through the integrated app shell at `http://localhost:8080/login`.
+
+   Local seeded credentials after `bun run db:seed`:
+
+   - email: `owner@debugpath.dev`
+   - password: `debugpath-dev-password`
+
+6. Stop infrastructure when you are done:
 
    ```bash
    bun run infra:down
@@ -86,13 +98,13 @@ Caddyfile
 
 ## Verification
 
-The base repo verification flow is still:
+The repo verification flow remains:
 
 ```bash
 bun run verify
 ```
 
-Phase 2 verification also expects local PostgreSQL coverage:
+Current build verification for the database-backed shell also expects PostgreSQL coverage:
 
 ```bash
 bun run db:migrate
@@ -102,8 +114,8 @@ bun run test:api:integration
 
 ## Current architecture boundaries
 
-- `apps/web` owns Astro pages, layouts, placeholder auth shell routing, and first render.
-- `apps/api` owns service routes, versioned API entrypoints, and the database access layer.
+- `apps/web` owns Astro pages, layouts, sign-in rendering, investigation list rendering, and the first investigation CRUD shell.
+- `apps/api` owns auth, session handling, workspace-aware investigation routes, audit-event writes, versioned API entrypoints, and the database access layer.
 - `packages/contracts` owns request and response contracts.
-- PostgreSQL is now the source of truth for metadata and normalized investigation structure.
+- PostgreSQL is the source of truth for accounts, workspaces, investigations, and the wider normalized investigation model.
 - Object storage remains the blob layer once artifact ingestion lands in Phase 4.

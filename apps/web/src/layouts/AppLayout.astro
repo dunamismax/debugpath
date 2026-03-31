@@ -1,9 +1,14 @@
 ---
-import { apiBasePath, appName } from '@debugpath/contracts';
+import { appName } from '@debugpath/contracts';
 
 import '../styles/global.css';
 
-const { title = `${appName} workspace` } = Astro.props;
+const {
+  title = `${appName} workspace`,
+  currentUser = null,
+  currentWorkspace = null,
+  redirectAfterLogout = '/login?logged_out=1',
+} = Astro.props;
 ---
 
 <!doctype html>
@@ -17,12 +22,35 @@ const { title = `${appName} workspace` } = Astro.props;
   <body>
     <main class="shell page-grid">
       <nav>
-        <strong>{appName} / Authenticated shell placeholder</strong>
+        <div class="nav-brand">
+          <strong>{appName}</strong>
+          <span class="nav-subtle">{currentWorkspace?.name ?? 'Workspace shell'}</span>
+        </div>
         <ul>
-          <li><a href="/">Public shell</a></li>
-          <li><a href={apiBasePath + '/health'}>API health</a></li>
+          <li><a href="/app">Investigations</a></li>
+          <li><a href="/">Public overview</a></li>
+          <li>
+            <form action="/api/v1/auth/logout" method="post" class="inline-form">
+              <input type="hidden" name="redirectTo" value={redirectAfterLogout} />
+              <button class="button-link button-reset" type="submit">Log out</button>
+            </form>
+          </li>
         </ul>
       </nav>
+
+      {currentUser && currentWorkspace && (
+        <section class="toolbar">
+          <div>
+            <span class="label">Signed in</span>
+            <strong>{currentUser.displayName ?? currentUser.email}</strong>
+          </div>
+          <div>
+            <span class="label">Workspace</span>
+            <strong>{currentWorkspace.slug}</strong>
+          </div>
+        </section>
+      )}
+
       <slot />
       <footer>
         This route stays Astro-owned. Interactive islands only enter when timeline filters,
