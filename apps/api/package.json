@@ -7,11 +7,13 @@
     "dev": "cd ../.. && bun --watch apps/api/src/index.ts",
     "build": "bun build ./src/index.ts --outdir dist --target bun",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "bun test"
+    "test": "bun test ./test/unit",
+    "test:integration": "bun test ./test/integration"
   },
   "dependencies": {
     "@debugpath/contracts": "workspace:*",
-    "elysia": "^1.4.11"
+    "elysia": "^1.4.11",
+    "postgres": "3.4.8"
   },
   "devDependencies": {
     "@types/bun": "^1.3.1"

@@ -11,11 +11,16 @@
     "dev": "bash ops/scripts/dev.sh",
     "dev:infra": "docker compose up -d postgres minio caddy",
     "infra:down": "docker compose down",
+    "db:migrate": "bun run db/scripts/migrate.ts",
+    "db:seed": "bun run db/scripts/seed.ts",
     "build": "bun run build:contracts && bun run build:api && bun run build:web",
     "build:contracts": "cd packages/contracts && bun run build",
     "build:api": "cd apps/api && bun run build",
     "build:web": "cd apps/web && bun run build",
-    "test": "bun test",
+    "test": "bun run test:contracts && bun run test:api",
+    "test:contracts": "cd packages/contracts && bun run test",
+    "test:api": "cd apps/api && bun run test",
+    "test:api:integration": "cd apps/api && bun run test:integration",
     "typecheck": "bun run typecheck:contracts && bun run typecheck:api && bun run typecheck:web",
     "typecheck:contracts": "cd packages/contracts && bun run typecheck",
     "typecheck:api": "cd apps/api && bun run typecheck",
@@ -23,7 +28,7 @@
     "astro:check": "cd apps/web && bunx astro check",
     "lint": "bunx biome check .",
     "format": "bunx biome check . --write",
-    "verify": "bun run lint && bun run typecheck && bun run astro:check && bun test && bun run build:web && bun run build:api"
+    "verify": "bun run lint && bun run typecheck && bun run astro:check && bun run test && bun run build:web && bun run build:api"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

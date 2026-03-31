@@ -14,7 +14,7 @@ DebugPath is still in active greenfield build mode. This file is the execution a
 - [x] `Caddyfile` routes `/api/*` to the API and everything else to the Astro app.
 - [x] The repo has a root verification surface with `lint`, `typecheck`, `astro:check`, `test`, `build`, and `verify` scripts.
 - [x] Vue is intentionally not part of the initial skeleton.
-- [ ] SQL migrations are implemented.
+- [x] SQL migrations are implemented.
 - [ ] Authentication and workspace membership are implemented.
 - [ ] Artifact ingestion is implemented.
 - [ ] Search, notes, bundles, and sharing are implemented.
@@ -41,7 +41,7 @@ DebugPath is still in active greenfield build mode. This file is the execution a
 
 - [x] Phase 0 - Repo bootstrap and execution guardrails.
 - [x] Phase 1 - Application skeleton and local platform.
-- [ ] Phase 2 - Database foundation and migration runner.
+- [x] Phase 2 - Database foundation and migration runner.
 - [ ] Phase 3 - Authentication, workspace model, and investigation shell.
 - [ ] Phase 4 - Artifact ingestion MVP.
 - [ ] Phase 5 - Normalization pipeline and unified timeline.
@@ -118,28 +118,28 @@ DebugPath is still in active greenfield build mode. This file is the execution a
 
 ### Objectives
 
-- [ ] Implement SQL migrations and the initial schema.
-- [ ] Add database connectivity, query helpers, and transaction patterns.
-- [ ] Establish a seed strategy for local development.
+- [x] Implement SQL migrations and the initial schema.
+- [x] Add database connectivity, query helpers, and transaction patterns.
+- [x] Establish a seed strategy for local development.
 
 ### Checklist
 
-- [ ] Migration runner script.
-- [ ] Initial schema for users, workspaces, investigations, artifacts, notes, ingestion jobs, and basic sharing tables.
-- [ ] Database access layer with explicit query functions.
-- [ ] Local seed command.
+- [x] Migration runner script.
+- [x] Initial schema for users, workspaces, investigations, artifacts, notes, ingestion jobs, and basic sharing tables.
+- [x] Database access layer with explicit query functions.
+- [x] Local seed command.
 
 ### Exit criteria
 
-- [ ] Schema can be created from scratch in a clean database.
-- [ ] Migrations are repeatable and deterministic.
-- [ ] Basic relational constraints protect data integrity.
+- [x] Schema can be created from scratch in a clean database.
+- [x] Migrations are repeatable and deterministic.
+- [x] Basic relational constraints protect data integrity.
 
 ### Verification
 
-- [ ] Run migrations on an empty database.
-- [ ] Run seeds.
-- [ ] Run integration tests against local PostgreSQL.
+- [x] Run migrations on an empty database.
+- [x] Run seeds.
+- [x] Run integration tests against local PostgreSQL.
 
 ## Phase 3 - Authentication, workspace model, and investigation shell
 
@@ -373,7 +373,7 @@ DebugPath is still in active greenfield build mode. This file is the execution a
 
 - [x] Root repo gates exist: `bunx biome check .`, `bun run typecheck`, `bun run astro:check`, `bun test`, and build scripts.
 - [ ] Parser fixtures should exist for every supported artifact type.
-- [ ] Database integration tests should cover migrations and core queries.
+- [x] Database integration tests should cover migrations and core queries.
 - [ ] API tests should cover auth, uploads, notes, search, and sharing.
 - [ ] Playwright should cover sign in, investigation creation, upload flows, timeline inspection, search, note authoring, and bundle sharing.
 - [ ] Regression fixtures should reflect real-world messy inputs, not just ideal examples.

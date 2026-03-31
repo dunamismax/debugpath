@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test';
 
 import { healthResponseSchema } from '@debugpath/contracts';
 
-import { app } from '../src/index';
+import { app } from '../../src/index';
 
 test('api v1 health route returns the shared contract', async () => {
   const response = await app.handle(new Request('http://debugpath.local/api/v1/health'));

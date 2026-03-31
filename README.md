@@ -1,16 +1,19 @@
-# DebugPath
+# DebugPath · debugpath.dev
+
+> Self-hostable investigation workspace for turning messy production evidence into one coherent debug surface.
 
 DebugPath is a browser-first debug artifact workspace for production investigations. It is being built as a Bun monorepo with an Astro web app, an Elysia API, shared Zod contracts, PostgreSQL metadata, MinIO-backed artifact storage, and Caddy for local integration parity.
 
-## Phase 1 status
+## Phase 2 status
 
-This repo now has the Phase 1 application skeleton in place:
+This repo now has the Phase 2 database foundation in place:
 
-- `apps/web` is an Astro app with explicit unauthenticated and authenticated layout placeholders.
-- `apps/api` is an Elysia service with direct and versioned health routes.
-- `packages/contracts` holds shared Zod contracts and response envelopes.
-- `compose.yaml` starts PostgreSQL, MinIO, and Caddy.
-- `Caddyfile` routes `/api/*` to the API and everything else to the Astro app.
+- `apps/web` stays Astro-owned for routes, layouts, and first render.
+- `apps/api` now includes a PostgreSQL access layer with explicit query functions and transaction helpers.
+- `db/migrations/0001_initial_schema.sql` creates the initial relational model for users, workspaces, investigations, artifacts, notes, ingestion jobs, bundles, and share links.
+- `db/scripts/migrate.ts` applies deterministic SQL migrations with checksum tracking.
+- `db/scripts/seed.ts` creates a rerunnable local seed graph rooted in `debugpath.dev` sample data.
+- `apps/api/test/integration/database.integration.test.ts` verifies migrations, seed idempotency, and relational constraints against PostgreSQL.
 
 ## Vue admission rule
 
@@ -35,6 +38,7 @@ packages/
   contracts/
 db/
   migrations/
+  scripts/
   seeds/
 ops/
   docker/
@@ -67,7 +71,14 @@ Caddyfile
 
    `bun run dev` auto-detects a host LAN IP for the Caddy upstreams on this macOS setup. If another host needs different routing, override `DEBUGPATH_WEB_UPSTREAM` and `DEBUGPATH_API_UPSTREAM` in `.env`.
 
-4. Stop infrastructure when you are done:
+4. Apply the database schema and seed local data:
+
+   ```bash
+   bun run db:migrate
+   bun run db:seed
+   ```
+
+5. Stop infrastructure when you are done:
 
    ```bash
    bun run infra:down
@@ -75,25 +86,24 @@ Caddyfile
 
 ## Verification
 
-The base repo verification flow is:
+The base repo verification flow is still:
 
 ```bash
 bun run verify
 ```
 
-Phase 1 verification also expects:
+Phase 2 verification also expects local PostgreSQL coverage:
 
 ```bash
-bun run dev
-bun run typecheck
-bun run astro:check
-docker compose exec caddy sh -lc 'curl -fsS http://127.0.0.1:8080/ >/dev/null && curl -fsS http://127.0.0.1:8080/api/v1/health >/dev/null && echo CADDY_SMOKE_OK'
+bun run db:migrate
+bun run db:seed
+bun run test:api:integration
 ```
 
 ## Current architecture boundaries
 
 - `apps/web` owns Astro pages, layouts, placeholder auth shell routing, and first render.
-- `apps/api` owns service routes and versioned API entrypoints.
+- `apps/api` owns service routes, versioned API entrypoints, and the database access layer.
 - `packages/contracts` owns request and response contracts.
-- PostgreSQL remains the source of truth for metadata once migrations land in Phase 2.
+- PostgreSQL is now the source of truth for metadata and normalized investigation structure.
 - Object storage remains the blob layer once artifact ingestion lands in Phase 4.
