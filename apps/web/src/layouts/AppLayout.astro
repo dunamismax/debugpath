@@ -1,0 +1,33 @@
+---
+import { apiBasePath, appName } from '@debugpath/contracts';
+
+import '../styles/global.css';
+
+const { title = `${appName} workspace` } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <main class="shell page-grid">
+      <nav>
+        <strong>{appName} / Authenticated shell placeholder</strong>
+        <ul>
+          <li><a href="/">Public shell</a></li>
+          <li><a href={apiBasePath + '/health'}>API health</a></li>
+        </ul>
+      </nav>
+      <slot />
+      <footer>
+        This route stays Astro-owned. Interactive islands only enter when timeline filters,
+        inspectors, or bundle selection become awkward without them.
+      </footer>
+    </main>
+  </body>
+</html>

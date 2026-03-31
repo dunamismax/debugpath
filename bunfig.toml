@@ -1,0 +1,6 @@
+[install]
+exact = true
+linkWorkspacePackages = true
+
+[test]
+root = "."

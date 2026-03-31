@@ -1,0 +1,19 @@
+{
+  "name": "@debugpath/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "cd ../.. && bun --watch apps/api/src/index.ts",
+    "build": "bun build ./src/index.ts --outdir dist --target bun",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@debugpath/contracts": "workspace:*",
+    "elysia": "^1.4.11"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.1"
+  }
+}

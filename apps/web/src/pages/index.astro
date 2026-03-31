@@ -1,0 +1,65 @@
+---
+import { apiBasePath, appName } from '@debugpath/contracts';
+
+import PublicLayout from '../layouts/PublicLayout.astro';
+---
+
+<PublicLayout title={`${appName} | Browser-first debug workspaces`}>
+  <section class="hero page-grid">
+    <div>
+      <p class="kicker">Phase 1 skeleton</p>
+      <h1>Turn messy incident evidence into one coherent investigation surface.</h1>
+      <p class="lead">
+        DebugPath starts with Astro-owned routes, an Elysia API, shared Zod contracts, and a local
+        platform that already runs behind Caddy.
+      </p>
+    </div>
+    <div class="badge-row">
+      <div class="badge">
+        <span class="label">Reverse proxy</span>
+        <strong>Caddy on localhost:8080</strong>
+      </div>
+      <div class="badge">
+        <span class="label">API base</span>
+        <strong>{apiBasePath}</strong>
+      </div>
+      <div class="badge">
+        <span class="label">Storage lane</span>
+        <strong>PostgreSQL + MinIO</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="page-grid columns-2">
+    <article class="panel">
+      <p class="kicker">Unauthenticated shell</p>
+      <h2>Entry points stay explicit</h2>
+      <p class="lead">
+        The public surface is intentionally spare. Login, product framing, and future share links can
+        live here without turning the app into a client-heavy shell.
+      </p>
+      <div class="link-list">
+        <a class="button-link primary" href="/app">Open the authenticated placeholder</a>
+        <a class="button-link" href={apiBasePath + '/health'}>Check the API through Caddy</a>
+      </div>
+    </article>
+
+    <article class="panel">
+      <p class="kicker">Current stack choices</p>
+      <div class="stat-list">
+        <div class="stat">
+          <span class="label">Frontend ownership</span>
+          <strong>Astro routes, layouts, and first render</strong>
+        </div>
+        <div class="stat">
+          <span class="label">Interactive islands</span>
+          <strong>Vue deferred until timeline or bundle state earns it</strong>
+        </div>
+        <div class="stat">
+          <span class="label">Contracts</span>
+          <strong>Shared Zod schemas from packages/contracts</strong>
+        </div>
+      </div>
+    </article>
+  </section>
+</PublicLayout>

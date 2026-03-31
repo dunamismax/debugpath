@@ -1,0 +1,17 @@
+{
+  auto_https off
+  admin off
+}
+
+:8080 {
+  encode gzip zstd
+
+  @api path /api/*
+  handle @api {
+    reverse_proxy {$API_UPSTREAM}
+  }
+
+  handle {
+    reverse_proxy {$WEB_UPSTREAM}
+  }
+}

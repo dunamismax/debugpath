@@ -1,0 +1,52 @@
+---
+import { apiBasePath } from '@debugpath/contracts';
+
+import AppLayout from '../../layouts/AppLayout.astro';
+---
+
+<AppLayout title="DebugPath | Investigation shell placeholder">
+  <section class="hero page-grid">
+    <div>
+      <p class="kicker">Authenticated shell placeholder</p>
+      <h1>Investigation workspace frame is live.</h1>
+      <p class="lead">
+        The first real investigation view will hang off this shell. For now it proves Astro owns the
+        route, the layout, and the first page render before auth, data, and timeline work arrive.
+      </p>
+    </div>
+    <div class="badge-row">
+      <div class="badge">
+        <span class="label">Artifacts</span>
+        <strong>Upload rail comes in Phase 4</strong>
+      </div>
+      <div class="badge">
+        <span class="label">Timeline</span>
+        <strong>Unified event surface starts in Phase 5</strong>
+      </div>
+      <div class="badge">
+        <span class="label">API contract</span>
+        <strong>{apiBasePath + '/health'}</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="page-grid columns-2">
+    <article class="tile">
+      <p class="kicker">Ready now</p>
+      <ul>
+        <li>Astro-owned app shell and placeholder navigation</li>
+        <li>Elysia API under a versioned base path</li>
+        <li>Shared Zod contracts compiled across packages</li>
+      </ul>
+    </article>
+
+    <article class="tile">
+      <p class="kicker">Next</p>
+      <ul>
+        <li>SQL migrations and database access layer</li>
+        <li>Workspace membership and investigation CRUD</li>
+        <li>Artifact ingestion backed by object storage</li>
+      </ul>
+    </article>
+  </section>
+</AppLayout>

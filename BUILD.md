@@ -86,18 +86,18 @@ This repo should follow the TypeScript full-stack Bun web lane, with Astro as th
 
 ### Required stack
 
-- [ ] TypeScript across frontend, backend, and shared contracts
-- [ ] Bun workspace monorepo
-- [ ] Astro for pages, routing, layouts, and server-first rendering
-- [ ] Vue 3 only for substantial interactive islands such as dense timeline filtering, inspectors, upload state, or bundle composition when Astro plus HTML becomes awkward
-- [ ] Plain CSS with design tokens
-- [ ] Elysia for API and backend services
-- [ ] Zod for request, response, and ingestion contract validation
+- [x] TypeScript across frontend, backend, and shared contracts
+- [x] Bun workspace monorepo
+- [x] Astro for pages, routing, layouts, and server-first rendering
+- [x] Vue 3 only for substantial interactive islands such as dense timeline filtering, inspectors, upload state, or bundle composition when Astro plus HTML becomes awkward
+- [x] Plain CSS with design tokens
+- [x] Elysia for API and backend services
+- [x] Zod for request, response, and ingestion contract validation
 - [ ] PostgreSQL as the system of record
 - [ ] Raw SQL first with thin helpers and checked-in SQL migrations
 - [ ] Object storage interface for uploaded artifacts, starting with local S3-compatible development via MinIO or equivalent
-- [ ] Docker Compose for local orchestration
-- [ ] Caddy for reverse proxy and local-production parity
+- [x] Docker Compose for local orchestration
+- [x] Caddy for reverse proxy and local-production parity
 - [ ] Biome, TypeScript checks, Astro checks, bun test, and Playwright as the quality baseline
 
 ### Repo target layout
@@ -372,8 +372,8 @@ Caddyfile
 
 ### Phase order summary
 
-- [ ] Phase 0: repo bootstrap and execution guardrails
-- [ ] Phase 1: application skeleton and local platform
+- [x] Phase 0: repo bootstrap and execution guardrails
+- [x] Phase 1: application skeleton and local platform
 - [ ] Phase 2: database foundation and migration runner
 - [ ] Phase 3: authentication, workspace model, and investigation shell
 - [ ] Phase 4: artifact ingestion MVP
@@ -388,65 +388,67 @@ Caddyfile
 
 ### Objectives
 
-- [ ] Initialize the Bun workspace and root scripts.
-- [ ] Establish repo structure, code style, env handling, and verification entrypoints.
-- [ ] Add a README that explains the product and local development flow.
-- [ ] Add this `BUILD.md` and keep it current.
+- [x] Initialize the Bun workspace and root scripts.
+- [x] Establish repo structure, code style, env handling, and verification entrypoints.
+- [x] Add a README that explains the product and local development flow.
+- [x] Add this `BUILD.md` and keep it current.
 
 ### Deliverables
 
-- [ ] Workspace `package.json` with `dev`, `build`, `test`, `typecheck`, and `verify` scripts
-- [ ] Bun workspace config
-- [ ] Biome config
-- [ ] root TypeScript config
-- [ ] base env example files
-- [ ] README with setup and architecture summary
-- [ ] compose file with postgres, object storage, and caddy placeholders or initial definitions
+- [x] Workspace `package.json` with `dev`, `build`, `test`, `typecheck`, and `verify` scripts
+- [x] Bun workspace config
+- [x] Biome config
+- [x] root TypeScript config
+- [x] base env example files
+- [x] README with setup and architecture summary
+- [x] compose file with postgres, object storage, and caddy placeholders or initial definitions
 
 ### Acceptance criteria
 
-- [ ] Fresh clone can install dependencies and run the base verification command.
-- [ ] Repo shape matches the intended app and package layout.
-- [ ] No hidden toolchain assumptions live only in chat.
+- [x] Fresh clone can install dependencies and run the base verification command.
+- [x] Repo shape matches the intended app and package layout.
+- [x] No hidden toolchain assumptions live only in chat.
 
 ### Verification
 
-- [ ] `bun install`
-- [ ] `bun run verify`
+- [x] `bun install`
+- [x] `bun run verify`
 
 ## Phase 1: application skeleton and local platform
 
 ### Objectives
 
-- [ ] Create `apps/web`, `apps/api`, and `packages/contracts`.
-- [ ] Wire Astro, Elysia, Zod, and shared TypeScript configs.
-- [ ] Keep Astro in charge of routes, layouts, and first-rendered app shells from the start.
-- [ ] Add Vue only if an initial investigation workflow already proves awkward without an interactive island.
-- [ ] Stand up Caddy routing for local integration.
-- [ ] Bring up PostgreSQL and object storage locally.
+- [x] Create `apps/web`, `apps/api`, and `packages/contracts`.
+- [x] Wire Astro, Elysia, Zod, and shared TypeScript configs.
+- [x] Keep Astro in charge of routes, layouts, and first-rendered app shells from the start.
+- [x] Add Vue only if an initial investigation workflow already proves awkward without an interactive island.
+- [x] Stand up Caddy routing for local integration.
+- [x] Bring up PostgreSQL and object storage locally.
 
 ### Deliverables
 
-- [ ] web app with Astro-owned authenticated and unauthenticated layout placeholders
-- [ ] api service health endpoint and versioned API routing base
-- [ ] contracts package with initial DTOs and response envelopes
-- [ ] compose services for postgres and object storage
-- [ ] Caddyfile routing local web and api services
-- [ ] documented rule for when Vue is allowed into the web app
+- [x] web app with Astro-owned authenticated and unauthenticated layout placeholders
+- [x] api service health endpoint and versioned API routing base
+- [x] contracts package with initial DTOs and response envelopes
+- [x] compose services for postgres and object storage
+- [x] Caddyfile routing local web and api services
+- [x] documented rule for when Vue is allowed into the web app
 
 ### Acceptance criteria
 
-- [ ] Web and API can run together through the local reverse proxy.
-- [ ] Contracts compile cleanly across packages.
-- [ ] Routes, layouts, and initial page delivery are Astro-owned.
-- [ ] Local developers can start the stack with one documented flow.
+- [x] Web and API can run together through the local reverse proxy.
+- [x] Contracts compile cleanly across packages.
+- [x] Routes, layouts, and initial page delivery are Astro-owned.
+- [x] Local developers can start the stack with one documented flow.
 
 ### Verification
 
-- [ ] `bun run dev`
-- [ ] `bun run typecheck`
-- [ ] `bun --cwd apps/web run astro check`
-- [ ] smoke test through Caddy
+- [x] `bun run dev`
+- [x] `bun run typecheck`
+- [x] `bun run astro:check`
+- [x] smoke test through Caddy
+
+Verified repo command for the Caddy smoke: `docker compose exec caddy sh -lc 'curl -fsS http://127.0.0.1:8080/ >/dev/null && curl -fsS http://127.0.0.1:8080/api/v1/health >/dev/null && echo CADDY_SMOKE_OK'`
 
 ## Phase 2: database foundation and migration runner
 
@@ -704,13 +706,13 @@ Caddyfile
 
 ### Minimum repo gates
 
-- [ ] `bunx biome check .`
-- [ ] `bun run typecheck`
-- [ ] `bun --cwd apps/web run astro check`
-- [ ] `bun test`
-- [ ] `bun --cwd apps/web run build`
-- [ ] `bun --cwd apps/api run build`
-- [ ] `bun run verify`
+- [x] `bunx biome check .`
+- [x] `bun run typecheck`
+- [x] `bun run astro:check`
+- [x] `bun test`
+- [x] `bun run build:web`
+- [x] `bun run build:api`
+- [x] `bun run verify`
 
 ### Additional required gates by feature area
 
@@ -767,9 +769,9 @@ Caddyfile
 
 ## Immediate next actions
 
-- [ ] Complete Phase 0 repo bootstrap.
-- [ ] Create the workspace structure for web, api, and contracts.
-- [ ] Stand up local postgres, object storage, and caddy in Compose.
+- [x] Complete Phase 0 repo bootstrap.
+- [x] Create the workspace structure for web, api, and contracts.
+- [x] Stand up local postgres, object storage, and caddy in Compose.
 - [ ] Commit initial migrations and contract scaffolding before feature work starts.
 
 ## Exit criteria for removing BUILD.md later

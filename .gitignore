@@ -1,0 +1,10 @@
+node_modules
+.bun
+.astro
+dist
+coverage
+.env
+.env.local
+.DS_Store
+*.log
+*.tsbuildinfo
