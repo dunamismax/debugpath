@@ -82,14 +82,14 @@ The product should feel like a serious engineering tool, not a generic file uplo
 
 ## Stack and architecture direction
 
-This repo should follow the TypeScript full-stack Bun web lane.
+This repo should follow the TypeScript full-stack Bun web lane, with Astro as the default browser surface. Vue is optional. Only introduce Vue where a DebugPath workflow has enough sustained client-side state or interaction complexity to clearly earn it.
 
 ### Required stack
 
 - [ ] TypeScript across frontend, backend, and shared contracts
 - [ ] Bun workspace monorepo
-- [ ] Astro for pages and server-first rendering
-- [ ] Vue 3 for interactive investigation UI
+- [ ] Astro for pages, routing, layouts, and server-first rendering
+- [ ] Vue 3 only for substantial interactive islands such as dense timeline filtering, inspectors, upload state, or bundle composition when Astro plus HTML becomes awkward
 - [ ] Plain CSS with design tokens
 - [ ] Elysia for API and backend services
 - [ ] Zod for request, response, and ingestion contract validation
@@ -108,8 +108,8 @@ apps/
   api/
 packages/
   contracts/
-  ui/
-  config/
+  ui/        # optional, only after shared interactive components are real
+  config/    # optional, only if shared tooling config earns a package
 db/
   migrations/
   seeds/
@@ -128,7 +128,8 @@ Caddyfile
 - [ ] Keep the first production deployment shape simple: web, api, postgres, object storage, caddy.
 - [ ] Keep background work in the same repo and same language. Start with a worker process only when ingestion latency or export work justifies it.
 - [ ] Put shared DTOs, parse result schemas, and identifier shapes in `packages/contracts`.
-- [ ] Keep Astro in charge of pages and routing. Do not drift into a client-heavy SPA.
+- [ ] Keep Astro in charge of routes, page composition, page data loading, and share-page rendering. Do not drift into a client-heavy SPA.
+- [ ] Add Vue only as targeted islands inside Astro pages when a specific DebugPath workflow truly needs richer client state.
 - [ ] Use progressive disclosure in the UI. Investigation clarity matters more than dashboard theater.
 
 ## System domains
@@ -149,10 +150,11 @@ Caddyfile
 
 ### System boundaries
 
-- [ ] `apps/web` owns pages, authenticated app shell, upload flows, timeline UI, search UI, and bundle views.
+- [ ] `apps/web` owns Astro pages, routing, layouts, server-rendered investigation shells, upload flows, search UI, and bundle views.
+- [ ] Vue islands in `apps/web` are optional and should be limited to interaction-heavy investigation tools such as timeline filters, inspectors, drag-and-drop upload state, or bundle composition.
 - [ ] `apps/api` owns auth, data APIs, ingestion endpoints, bundle generation, and background entrypoints.
 - [ ] `packages/contracts` owns Zod schemas and DTOs for requests, responses, normalized artifacts, and search results.
-- [ ] `packages/ui` owns reusable UI primitives once duplication becomes real.
+- [ ] `packages/ui` owns reusable UI primitives only after duplication becomes real.
 - [ ] `db/migrations` owns SQL schema evolution.
 
 ## Data model and migration plan
@@ -338,6 +340,7 @@ Caddyfile
 
 ### App shell and navigation
 
+- [ ] Astro owns investigation routes, layout composition, and initial page delivery.
 - [ ] Clear distinction between workspace, investigation list, and individual investigation views.
 - [ ] Fast jump from investigation summary to artifacts, timeline, notes, and bundle builder.
 - [ ] Minimal but polished dashboarding. No chart spam.
@@ -346,10 +349,10 @@ Caddyfile
 
 - [ ] Upload and paste entry points above the fold.
 - [ ] Artifact list with type, status, ingestion state, and quick metadata.
-- [ ] Unified timeline with filters and event detail drawer.
+- [ ] Unified timeline with filters and event detail drawer, keeping the page Astro-owned and adding Vue only if the filter and inspector state genuinely needs it.
 - [ ] Correlation sidebar or panel for IDs and linked artifacts.
 - [ ] Notes panel for hypotheses, conclusions, and evidence links.
-- [ ] Bundle builder that makes scope obvious before sharing.
+- [ ] Bundle builder that makes scope obvious before sharing, implemented with Astro-first page ownership and optional Vue only if multi-select state becomes unwieldy.
 
 ### UX rules
 
@@ -416,28 +419,33 @@ Caddyfile
 ### Objectives
 
 - [ ] Create `apps/web`, `apps/api`, and `packages/contracts`.
-- [ ] Wire Astro, Vue, Elysia, Zod, and shared TypeScript configs.
+- [ ] Wire Astro, Elysia, Zod, and shared TypeScript configs.
+- [ ] Keep Astro in charge of routes, layouts, and first-rendered app shells from the start.
+- [ ] Add Vue only if an initial investigation workflow already proves awkward without an interactive island.
 - [ ] Stand up Caddy routing for local integration.
 - [ ] Bring up PostgreSQL and object storage locally.
 
 ### Deliverables
 
-- [ ] web app with authenticated and unauthenticated layout placeholders
+- [ ] web app with Astro-owned authenticated and unauthenticated layout placeholders
 - [ ] api service health endpoint and versioned API routing base
 - [ ] contracts package with initial DTOs and response envelopes
 - [ ] compose services for postgres and object storage
 - [ ] Caddyfile routing local web and api services
+- [ ] documented rule for when Vue is allowed into the web app
 
 ### Acceptance criteria
 
 - [ ] Web and API can run together through the local reverse proxy.
 - [ ] Contracts compile cleanly across packages.
+- [ ] Routes, layouts, and initial page delivery are Astro-owned.
 - [ ] Local developers can start the stack with one documented flow.
 
 ### Verification
 
 - [ ] `bun run dev`
 - [ ] `bun run typecheck`
+- [ ] `bun --cwd apps/web run astro check`
 - [ ] smoke test through Caddy
 
 ## Phase 2: database foundation and migration runner
@@ -479,13 +487,14 @@ Caddyfile
 - [ ] login and logout flows
 - [ ] session middleware
 - [ ] workspace switcher or personal workspace default
-- [ ] investigation list page
+- [ ] Astro-rendered investigation list page
 - [ ] create, edit, archive investigation flows
 
 ### Acceptance criteria
 
 - [ ] Users can sign in, create an investigation, and revisit it later.
 - [ ] Authorization rules prevent cross-workspace access.
+- [ ] The investigation list and investigation shell remain Astro-owned pages.
 - [ ] Audit trail exists for important security and sharing actions.
 
 ### Verification
@@ -534,13 +543,14 @@ Caddyfile
 
 - [ ] parser implementations for stack traces, structured logs, HAR files, screenshots metadata, console output, and repro steps
 - [ ] timeline event writer
-- [ ] timeline UI with filters by time, severity, artifact type, and source
+- [ ] Astro investigation page with a timeline surface, using Vue only if filter and inspector state is clearly too rich for plain Astro plus HTML
 - [ ] event detail panel with source links
 
 ### Acceptance criteria
 
 - [ ] At least one realistic investigation containing mixed artifact types renders a coherent timeline.
 - [ ] Users can trace each normalized event back to its source artifact.
+- [ ] Page ownership still sits with Astro even if part of the timeline becomes a Vue island.
 - [ ] Parser warnings are visible without breaking the main workflow.
 
 ### Verification
@@ -586,7 +596,7 @@ Caddyfile
 
 - [ ] markdown-capable notes with timestamps and authorship
 - [ ] note anchors to artifacts or timeline events
-- [ ] bundle composition UI
+- [ ] bundle composition UI, keeping Astro in charge of the page and adding Vue only if the selection workflow clearly needs it
 - [ ] bundle export manifest and renderable share page
 - [ ] expiring and revocable share links
 
@@ -594,6 +604,7 @@ Caddyfile
 
 - [ ] A user can turn one investigation into a reviewable bundle with narrative context.
 - [ ] Shared bundles expose only the selected scope.
+- [ ] Shared bundle pages remain Astro-owned and do not require a full client app.
 - [ ] Revoking a share link immediately blocks access.
 
 ### Verification
@@ -695,6 +706,7 @@ Caddyfile
 
 - [ ] `bunx biome check .`
 - [ ] `bun run typecheck`
+- [ ] `bun --cwd apps/web run astro check`
 - [ ] `bun test`
 - [ ] `bun --cwd apps/web run build`
 - [ ] `bun --cwd apps/api run build`
