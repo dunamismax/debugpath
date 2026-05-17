@@ -49,6 +49,12 @@ game data.
 
 ## PostgreSQL
 
-`debugpath-db` currently contains persistence type scaffolding only. Future
-migrations should avoid production secrets and run against a local database URL
-provided by the developer environment.
+`debugpath-db` owns migrations under `crates/debugpath-db/migrations/`. The
+initial schema covers players, published cases, attempts, diagnosis
+submissions, scores, replay events, unlocks, and authored drafts.
+
+Run migration work against a local database URL provided by the developer
+environment. Do not require production secrets for local checks.
+
+Backup and restore notes live in
+[`postgres-backup-restore.md`](postgres-backup-restore.md).

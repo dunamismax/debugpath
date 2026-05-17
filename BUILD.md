@@ -205,7 +205,7 @@ Exit criteria: a local SSH session can play one complete case end to end.
 
 ### Phase 4 - Database And Site
 
-- [ ] Add PostgreSQL schema and migrations.
+- [x] Add PostgreSQL schema and migrations.
 - [ ] Store attempts, submissions, scores, replay events, player handles, and
       published case metadata.
 - [ ] Build Axum + Leptos public site with:
@@ -225,11 +225,11 @@ display a replay.
 ### Phase 5 - MVP Hardening
 
 - [x] Ship three polished cases.
-- [ ] Add case authoring guide and review checklist.
-- [ ] Add operational runbook for deploying the SSH server, site, database,
+- [x] Add case authoring guide and review checklist.
+- [x] Add operational runbook for deploying the SSH server, site, database,
       and worker.
 - [ ] Add rate limiting, session limits, audit logs, and basic abuse controls.
-- [ ] Add backup and restore notes for PostgreSQL.
+- [x] Add backup and restore notes for PostgreSQL.
 - [ ] Add release smoke checks for SSH, TUI, site, database migrations, and
       replay rendering.
 
