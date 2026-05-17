@@ -37,14 +37,31 @@ shape for logs and case metadata.
 
 ## SSH
 
-`debugpath-ssh` is scaffolded but does not yet start a local SSH server. The
-crate already owns the production entrypoint constants and deterministic
-abuse-control primitives for the future exposed SSH edge: per-peer connection
+`debugpath-ssh` starts a local development SSH server. By default it binds only
+to loopback:
+
+```sh
+cargo run -p debugpath-ssh
+ssh -p 2222 localhost
+```
+
+The bind address and seed case are configurable without production DNS,
+Cloudflare, Caddy, or secrets:
+
+```sh
+DEBUGPATH_SSH_BIND=127.0.0.1:2223 DEBUGPATH_CASE_SLUG=slow-checkout cargo run -p debugpath-ssh
+```
+
+Development auth accepts anonymous, password, or public-key attempts after the
+abuse controls accept the peer. Each SSH session receives a fresh in-memory
+game state loaded through `debugpath-content` and `debugpath-engine`.
+
+The terminal screen is rendered by `debugpath-tui` with Ratatui and sent over
+the SSH channel. Player input is interpreted by the TUI/engine command model;
+SSH `exec`, environment requests, subsystems, host shell access, and host
+filesystem access are rejected. Current controls include per-peer connection
 rate windows, active session limits, command-size checks, and structured audit
 events with redacted peer metadata.
-
-Phase 3 will add safe development auth, local bind settings, and terminal IO
-that do not depend on `debugpath.dev` DNS.
 
 ## Site
 

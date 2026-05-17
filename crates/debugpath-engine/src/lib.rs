@@ -34,6 +34,10 @@ pub enum ReplayEvent {
         evidence: Vec<String>,
         damage: u32,
     },
+    CommandRejected {
+        command: String,
+        reason: String,
+    },
     HintUsed {
         hint_id: String,
         cost: u32,
@@ -97,7 +101,13 @@ impl Session {
             .commands
             .iter()
             .find(|command| command.command == input)
-            .ok_or_else(|| EngineError::UnknownCommand(input.to_owned()))?;
+            .ok_or_else(|| {
+                self.replay.push(ReplayEvent::CommandRejected {
+                    command: input.to_owned(),
+                    reason: "unknown fixture-backed command".to_owned(),
+                });
+                EngineError::UnknownCommand(input.to_owned())
+            })?;
         for evidence in &command.evidence {
             self.evidence.insert(evidence.clone());
         }

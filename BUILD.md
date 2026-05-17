@@ -122,9 +122,9 @@ MVP means the core game is usable end to end:
 - [x] Rust workspace scaffolded with the target crate boundaries or a clearly
       documented smaller initial subset.
 - [ ] `ssh debugpath.dev` can land a player in a Ratatui session.
-- [ ] Local SSH development mode works without production DNS or Cloudflare
+- [x] Local SSH development mode works without production DNS or Cloudflare
       changes.
-- [ ] One Ratatui session runs per player connection.
+- [x] One Ratatui session runs per player connection.
 - [x] Three polished deterministic cases ship with realistic artifacts and at
       least one plausible false trail each.
 - [x] Structured case loader validates cases before runtime.
@@ -193,14 +193,23 @@ diagnosed, fixed, scored, and replayed without a UI.
 
 ### Phase 3 - SSH And TUI
 
-- [ ] Implement local SSH server mode with safe development auth.
-- [ ] Map SSH terminal IO into the Ratatui app.
+- [x] Implement local SSH server mode with safe development auth.
+- [x] Map SSH terminal IO into the Ratatui app.
 - [ ] Build the incident panes, command palette, notes, hints, diagnosis
       form, fix selection, and results view.
-- [ ] Keep host filesystem and host shell unavailable to players.
-- [ ] Capture replay events from meaningful player actions.
+- [x] Keep host filesystem and host shell unavailable to players.
+- [x] Capture replay events from meaningful player actions.
 - [ ] Test terminal sizing, disconnect behavior, narrow layouts, and bad
       input paths.
+
+Phase 3 note: local SSH now binds to configurable loopback by default
+(`127.0.0.1:2222`), accepts safe development auth, creates a fresh
+content/engine-backed TUI app per SSH session, renders the Ratatui screen over
+the SSH channel, runs fixture-backed commands, rejects SSH `exec` and unknown
+host-shell-style commands, and has a russh client smoke test for PTY render,
+bad input, and a fixture command. The remaining unchecked Phase 3 work is the
+full command palette, interactive diagnosis/fix/result views, complete artifact
+browsing for every pane, and broader resize/disconnect/narrow-layout coverage.
 
 Exit criteria: a local SSH session can play one complete case end to end.
 

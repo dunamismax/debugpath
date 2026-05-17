@@ -469,6 +469,9 @@ pub fn render_replay(events: &[ReplayEvent]) -> String {
                 evidence.join(","),
                 damage
             ),
+            ReplayEvent::CommandRejected { command, reason } => {
+                format!("command rejected: {command} reason: {reason}")
+            }
             ReplayEvent::HintUsed { hint_id, cost } => {
                 format!("hint: {hint_id} cost: {cost}")
             }

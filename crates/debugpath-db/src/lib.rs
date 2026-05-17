@@ -386,6 +386,7 @@ pub fn migrations() -> &'static [Migration] {
 fn replay_event_type(event: &ReplayEvent) -> &'static str {
     match event {
         ReplayEvent::CommandRun { .. } => "command_run",
+        ReplayEvent::CommandRejected { .. } => "command_rejected",
         ReplayEvent::HintUsed { .. } => "hint_used",
         ReplayEvent::DiagnosisSubmitted => "diagnosis_submitted",
         ReplayEvent::FixApplied { .. } => "fix_applied",
