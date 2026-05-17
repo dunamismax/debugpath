@@ -4,6 +4,7 @@ use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::get;
 use debugpath_engine::ReplayEvent;
+use leptos::prelude::*;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -396,147 +397,234 @@ pub fn render_home(data: &SiteData) -> String {
     let featured = data
         .case(&data.featured_slug)
         .or_else(|| data.cases.first())
+        .cloned()
         .expect("seeded site has at least one case");
-    page(
-        "debugpath.dev",
-        &format!(
-            r#"<section aria-label="hero">
-  <h1>debugpath.dev</h1>
-  <p class="entrypoint"><code>ssh debugpath.dev</code></p>
-  <p>Solve production incidents from the terminal. Read logs, query fixtures, inspect traces, chase false leads, and prove the root cause.</p>
-</section>
-<section aria-label="featured incident">
-  <h2>Featured incident</h2>
-  <a href="/cases/{slug}">{title}</a>
-  <p>{summary}</p>
-</section>
-{}
-{}
-<nav aria-label="product sections">
-  <a href="/cases">Case catalog</a>
-  <a href="/leaderboard">Leaderboard</a>
-  <a href="/solves">Recent solves</a>
-  <a href="/replays/seed-slow-checkout">Replay viewer</a>
-  <a href="/authoring">Authoring docs</a>
-  <a href="/standards">Case standards</a>
-</nav>"#,
-            leaderboard_section(&data.leaderboard),
-            recent_solves_section(&data.recent_solves),
-            slug = escape_html(&featured.slug),
-            title = escape_html(&featured.title),
-            summary = escape_html(&featured.summary)
-        ),
-    )
+    let leaderboard = data.leaderboard.clone();
+    let recent_solves = data.recent_solves.clone();
+    render_page("debugpath.dev", move || {
+        let featured_href = format!("/cases/{}", featured.slug);
+        view! {
+            <section aria-label="hero" class="hero">
+                <div class="hero-copy">
+                    <p class="kicker">"Terminal incident lab"</p>
+                    <h1>"debugpath.dev"</h1>
+                    <p class="entrypoint"><code>"ssh debugpath.dev"</code></p>
+                    <p>
+                        "Solve production incidents from the terminal. Read logs, query fixtures, inspect traces, chase false leads, and prove the root cause."
+                    </p>
+                </div>
+                <div class="ops-snapshot" aria-label="site snapshot">
+                    <span>"cases online" <strong>"5"</strong></span>
+                    <span>"seeded solves" <strong>"3"</strong></span>
+                    <span>"public replay" <strong>"ready"</strong></span>
+                </div>
+            </section>
+            <section aria-label="featured incident" class="band">
+                <p class="kicker">"Featured incident"</p>
+                <h2><a href=featured_href>{featured.title}</a></h2>
+                <p>{featured.summary}</p>
+                <dl class="metadata">
+                    <div><dt>"Difficulty"</dt><dd>{featured.difficulty}</dd></div>
+                    <div><dt>"Component"</dt><dd>{featured.component}</dd></div>
+                </dl>
+            </section>
+            {leaderboard_section_view(leaderboard)}
+            {recent_solves_section_view(recent_solves)}
+            <nav aria-label="product sections" class="section-nav">
+                <a href="/cases">"Case catalog"</a>
+                <a href="/leaderboard">"Leaderboard"</a>
+                <a href="/solves">"Recent solves"</a>
+                <a href="/replays/seed-slow-checkout">"Replay viewer"</a>
+                <a href="/authoring">"Authoring docs"</a>
+                <a href="/standards">"Case standards"</a>
+            </nav>
+        }
+    })
 }
 
 pub fn render_case_catalog(cases: &[CaseSummary]) -> String {
-    let mut items = String::new();
-    for case in cases {
-        items.push_str(&format!(
-            r#"<li>
-  <a href="/cases/{slug}">{title}</a>
-  <span>{difficulty}</span>
-  <p>{summary}</p>
-</li>"#,
-            slug = escape_html(&case.slug),
-            title = escape_html(&case.title),
-            difficulty = escape_html(&case.difficulty),
-            summary = escape_html(&case.summary)
-        ));
-    }
-    page(
-        "Case Catalog",
-        &format!(
-            r#"<section aria-label="case catalog">
-  <h1>Case Catalog</h1>
-  <ul>{items}</ul>
-</section>"#
-        ),
-    )
+    let cases = cases.to_vec();
+    render_page("Case Catalog", move || {
+        view! {
+            <section aria-label="case catalog" class="band">
+                <p class="kicker">"Playable incidents"</p>
+                <h1>"Case Catalog"</h1>
+                <ul class="case-grid">
+                    {cases
+                        .into_iter()
+                        .map(|case| {
+                            let href = format!("/cases/{}", case.slug);
+                            view! {
+                                <li>
+                                    <a href=href>{case.title}</a>
+                                    <span>{case.difficulty}</span>
+                                    <p>{case.summary}</p>
+                                    <small>{case.component}</small>
+                                </li>
+                            }
+                        })
+                        .collect_view()}
+                </ul>
+            </section>
+        }
+    })
 }
 
 pub fn render_replay(events: &[ReplayEvent]) -> String {
-    let mut html = String::from(r#"<ol aria-label="replay events">"#);
-    for event in events {
-        let item = match event {
-            ReplayEvent::CommandRun {
-                command,
-                evidence,
-                damage,
-            } => format!(
-                "command: {} evidence: {} damage: {}",
-                command,
-                evidence.join(","),
-                damage
-            ),
-            ReplayEvent::CommandRejected { command, reason } => {
-                format!("command rejected: {command} reason: {reason}")
-            }
-            ReplayEvent::HintUsed { hint_id, cost } => {
-                format!("hint: {hint_id} cost: {cost}")
-            }
-            ReplayEvent::DiagnosisSubmitted => "diagnosis submitted".to_owned(),
-            ReplayEvent::FixApplied { fix_id, solves } => {
-                format!("fix: {fix_id} solves: {solves}")
-            }
-        };
-        html.push_str(&format!("<li>{}</li>", escape_html(&item)));
-    }
-    html.push_str("</ol>");
-    html
+    let events = events.to_vec();
+    render_fragment(move || replay_events_view(events))
 }
 
 fn leaderboard_section(entries: &[LeaderboardEntry]) -> String {
-    let mut rows = String::new();
-    for entry in entries {
-        rows.push_str(&format!(
-            r#"<tr>
-  <td>{}</td>
-  <td><a href="/players/{player}">@{player}</a></td>
-  <td><a href="/cases/{case_slug}">{case_slug}</a></td>
-  <td>{}</td>
-  <td>{}</td>
-</tr>"#,
-            entry.rank,
-            entry.score,
-            escape_html(&entry.solved_at),
-            player = escape_html(&entry.player_handle),
-            case_slug = escape_html(&entry.case_slug)
-        ));
-    }
-    format!(
-        r#"<section aria-label="leaderboard">
-  <h2>Leaderboard</h2>
-  <table>
-    <thead><tr><th>Rank</th><th>Player</th><th>Case</th><th>Score</th><th>Solved</th></tr></thead>
-    <tbody>{rows}</tbody>
-  </table>
-</section>"#
-    )
+    let entries = entries.to_vec();
+    render_fragment(move || leaderboard_section_view(entries))
 }
 
 fn recent_solves_section(solves: &[RecentSolve]) -> String {
-    let mut items = String::new();
-    for solve in solves {
-        items.push_str(&format!(
-            r#"<li>
-  <a href="/players/{player}">@{player}</a>
-  solved <a href="/cases/{case_slug}">{case_title}</a>
-  with {score} points at {solved_at}.
-</li>"#,
-            player = escape_html(&solve.player_handle),
-            case_slug = escape_html(&solve.case_slug),
-            case_title = escape_html(&solve.case_title),
-            score = solve.score,
-            solved_at = escape_html(&solve.solved_at)
-        ));
+    let solves = solves.to_vec();
+    render_fragment(move || recent_solves_section_view(solves))
+}
+
+fn leaderboard_section_view(entries: Vec<LeaderboardEntry>) -> impl IntoView {
+    view! {
+        <section aria-label="leaderboard" class="band">
+            <div class="section-heading">
+                <p class="kicker">"Seeded score table"</p>
+                <h2>"Leaderboard"</h2>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>"Rank"</th>
+                            <th>"Player"</th>
+                            <th>"Case"</th>
+                            <th>"Score"</th>
+                            <th>"Solved"</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {entries
+                            .into_iter()
+                            .map(|entry| {
+                                let player_href = format!("/players/{}", entry.player_handle);
+                                let case_href = format!("/cases/{}", entry.case_slug);
+                                let player_label = format!("@{}", entry.player_handle);
+                                view! {
+                                    <tr>
+                                        <td>{entry.rank}</td>
+                                        <td><a href=player_href>{player_label}</a></td>
+                                        <td><a href=case_href>{entry.case_slug}</a></td>
+                                        <td>{entry.score}</td>
+                                        <td>{entry.solved_at}</td>
+                                    </tr>
+                                }
+                            })
+                            .collect_view()}
+                    </tbody>
+                </table>
+            </div>
+        </section>
     }
-    format!(
-        r#"<section aria-label="recent solves">
-  <h2>Recent solves</h2>
-  <ul>{items}</ul>
-</section>"#
-    )
+}
+
+fn recent_solves_section_view(solves: Vec<RecentSolve>) -> impl IntoView {
+    view! {
+        <section aria-label="recent solves" class="band">
+            <div class="section-heading">
+                <p class="kicker">"Latest completions"</p>
+                <h2>"Recent solves"</h2>
+            </div>
+            <ul class="activity-list">
+                {solves
+                    .into_iter()
+                    .map(|solve| {
+                        let player_href = format!("/players/{}", solve.player_handle);
+                        let player_label = format!("@{}", solve.player_handle);
+                        let case_href = format!("/cases/{}", solve.case_slug);
+                        view! {
+                            <li>
+                                <a href=player_href>{player_label}</a>
+                                <span>"solved"</span>
+                                <a href=case_href>{solve.case_title}</a>
+                                <strong>{solve.score}</strong>
+                                <time>{solve.solved_at}</time>
+                            </li>
+                        }
+                    })
+                    .collect_view()}
+            </ul>
+        </section>
+    }
+}
+
+fn replay_events_view(events: Vec<ReplayEvent>) -> impl IntoView {
+    view! {
+        <ol aria-label="replay events" class="replay-events">
+            {events
+                .into_iter()
+                .enumerate()
+                .map(|(index, event)| {
+                    view! {
+                        <li>
+                            <span>{format!("{:02}", index + 1)}</span>
+                            <strong>{replay_event_kind(&event)}</strong>
+                            <p>{replay_event_label(&event)}</p>
+                        </li>
+                    }
+                })
+                .collect_view()}
+        </ol>
+    }
+}
+
+fn replay_event_kind(event: &ReplayEvent) -> &'static str {
+    match event {
+        ReplayEvent::CommandRun { .. } => "command",
+        ReplayEvent::CommandRejected { .. } => "rejected",
+        ReplayEvent::HintUsed { .. } => "hint",
+        ReplayEvent::DiagnosisSubmitted => "diagnosis",
+        ReplayEvent::FixApplied { .. } => "fix",
+    }
+}
+
+fn replay_event_label(event: &ReplayEvent) -> String {
+    match event {
+        ReplayEvent::CommandRun {
+            command,
+            evidence,
+            damage,
+        } => format!(
+            "command: {} evidence: {} damage: {}",
+            command,
+            evidence.join(","),
+            damage
+        ),
+        ReplayEvent::CommandRejected { command, reason } => {
+            format!("command rejected: {command} reason: {reason}")
+        }
+        ReplayEvent::HintUsed { hint_id, cost } => {
+            format!("hint: {hint_id} cost: {cost}")
+        }
+        ReplayEvent::DiagnosisSubmitted => "diagnosis submitted".to_owned(),
+        ReplayEvent::FixApplied { fix_id, solves } => {
+            format!("fix: {fix_id} solves: {solves}")
+        }
+    }
+}
+
+fn render_fragment<V>(view: impl FnOnce() -> V + 'static) -> String
+where
+    V: IntoView + 'static,
+{
+    view().to_html()
+}
+
+fn render_page<V>(title: &str, body: impl FnOnce() -> V + 'static) -> String
+where
+    V: IntoView + 'static,
+{
+    page(title, &render_fragment(body))
 }
 
 fn page(title: &str, body: &str) -> String {
@@ -552,36 +640,99 @@ fn page(title: &str, body: &str) -> String {
       color-scheme: light dark;
       font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       line-height: 1.5;
+      font-size: 16px;
     }}
     body {{
       margin: 0;
       color: #17202a;
-      background: #f7f9fb;
+      background: #f4f7f9;
     }}
     main {{
-      width: min(1120px, calc(100vw - 32px));
+      width: min(1180px, calc(100vw - 32px));
       margin: 0 auto;
       padding: 32px 0 48px;
+    }}
+    h1, h2, p {{
+      overflow-wrap: anywhere;
     }}
     h1, h2 {{
       margin: 0 0 12px;
       letter-spacing: 0;
     }}
+    h1 {{
+      font-size: 3rem;
+      line-height: 1;
+    }}
+    h2 {{
+      font-size: 1.35rem;
+    }}
     section, nav {{
-      padding: 20px 0;
+      padding: 24px 0;
       border-bottom: 1px solid #d8dee6;
     }}
     a {{
-      color: #005f73;
+      color: #006b74;
       font-weight: 650;
     }}
     code {{
-      padding: 2px 6px;
+      display: inline-block;
+      max-width: 100%;
+      padding: 4px 8px;
+      border: 1px solid #cad2dc;
+      background: #ffffff;
+      overflow-wrap: anywhere;
+    }}
+    .hero {{
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+      gap: 24px;
+      align-items: end;
+      padding-top: 12px;
+    }}
+    .hero-copy p {{
+      max-width: 68ch;
+    }}
+    .entrypoint code {{
+      font-size: 1.2rem;
+      border-color: #8fb1b7;
+    }}
+    .kicker {{
+      margin: 0 0 8px;
+      color: #6a4a00;
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }}
+    .ops-snapshot {{
+      display: grid;
+      gap: 8px;
+      padding: 14px;
       border: 1px solid #cad2dc;
       background: #ffffff;
     }}
-    .entrypoint code {{
-      font-size: 1.25rem;
+    .ops-snapshot span,
+    .metadata div,
+    .activity-list li {{
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+    }}
+    .metadata {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 24px;
+      margin: 16px 0 0;
+    }}
+    .metadata dt {{
+      color: #536170;
+      font-size: 0.82rem;
+      font-weight: 750;
+    }}
+    .metadata dd {{
+      margin: 0;
+    }}
+    .table-wrap {{
+      overflow-x: auto;
     }}
     table {{
       width: 100%;
@@ -591,22 +742,86 @@ fn page(title: &str, body: &str) -> String {
       padding: 8px 10px;
       border-bottom: 1px solid #d8dee6;
       text-align: left;
+      white-space: nowrap;
     }}
-    nav {{
+    .section-nav {{
       display: flex;
       flex-wrap: wrap;
       gap: 12px 18px;
+    }}
+    .case-grid {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      padding: 0;
+      list-style: none;
+    }}
+    .case-grid li {{
+      padding: 14px;
+      border: 1px solid #d8dee6;
+      background: #ffffff;
+    }}
+    .case-grid span,
+    .case-grid small {{
+      display: block;
+      margin-top: 8px;
+      color: #536170;
+    }}
+    .activity-list,
+    .replay-events {{
+      display: grid;
+      gap: 10px;
+      padding: 0;
+      list-style: none;
+    }}
+    .activity-list li,
+    .replay-events li {{
+      padding: 12px 0;
+      border-top: 1px solid #d8dee6;
+    }}
+    .replay-events li {{
+      display: grid;
+      grid-template-columns: 42px 110px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }}
+    .replay-events p {{
+      margin: 0;
+    }}
+    @media (max-width: 700px) {{
+      main {{
+        width: min(100vw - 24px, 1180px);
+        padding-top: 20px;
+      }}
+      .hero {{
+        grid-template-columns: 1fr;
+      }}
+      h1 {{
+        font-size: 2.35rem;
+      }}
+      .activity-list li,
+      .replay-events li {{
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }}
     }}
     @media (prefers-color-scheme: dark) {{
       body {{
         color: #e7edf3;
         background: #111820;
       }}
-      section, nav, th, td {{
+      section, nav, th, td, .case-grid li, .activity-list li, .replay-events li, .ops-snapshot {{
         border-color: #2b3948;
+      }}
+      .case-grid li, .ops-snapshot {{
+        background: #16212d;
       }}
       a {{
         color: #8bd3dd;
+      }}
+      .kicker {{
+        color: #d2b15f;
       }}
       code {{
         border-color: #3a4a5c;

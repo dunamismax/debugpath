@@ -13,9 +13,10 @@ shell output, packet snippets, customer reports, runbooks, and an incident
 timeline. The goal is not to guess the answer. The goal is to investigate,
 form a hypothesis, find evidence, test it, and fix the root cause.
 
-The project is in early implementation. The Rust workspace, three deterministic
-case fixtures, content loader, and engine scaffold are in place. The active
-build plan lives in [`BUILD.md`](BUILD.md), durable repo rules live in
+The project is in early implementation. The Rust workspace, deterministic
+case fixtures, content loader, engine scaffold, local SSH mode, PostgreSQL
+schema, and seeded Axum + Leptos public site are in place. The active build
+plan lives in [`BUILD.md`](BUILD.md), durable repo rules live in
 [`AGENTS.md`](AGENTS.md), and authoring, deployment, and backup notes live
 under [`docs/`](docs/).
 

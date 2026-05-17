@@ -16,12 +16,11 @@ Observed on 2026-05-17:
 
 - The repo contains the initial Rust workspace, foundation docs, five valid
   seed cases, content validation, deterministic engine scaffolding,
-  SSH abuse-control primitives, route/render smoke tests, and a `just`-based
-  local gate.
+  SSH abuse-control primitives, a seeded Axum + Leptos public site,
+  route/render smoke tests, and a `just`-based local gate.
 - The domain `debugpath.dev` is owned by Stephen and configured on
   Cloudflare.
-- No production SSH server, full Ratatui app, PostgreSQL migrations, or full
-  Axum/Leptos site has been implemented yet.
+- No production SSH server or full Ratatui app has been implemented yet.
 - The intended stack is Rust-first:
   - SSH entrypoint through a Rust SSH server.
   - Ratatui for the primary incident console.
@@ -139,7 +138,7 @@ MVP means the core game is usable end to end:
       masking, and command damage.
 - [x] PostgreSQL stores users or anonymous handles, attempts, submissions,
       scores, replay events, unlocks, and published case state.
-- [ ] Public Axum/Leptos site shows live or seeded leaderboard, recent solves,
+- [x] Public Axum/Leptos site shows live or seeded leaderboard, recent solves,
       featured incident, player profiles, replay viewer, authoring docs, and
       case quality standards.
 - [x] Replay events are captured and can be rendered on the site.
@@ -218,7 +217,7 @@ Exit criteria: a local SSH session can play one complete case end to end.
 - [x] Add PostgreSQL schema and migrations.
 - [x] Store attempts, submissions, scores, replay events, player handles, and
       published case metadata.
-- [ ] Build Axum + Leptos public site with:
+- [x] Build Axum + Leptos public site with:
       - SSH command as the primary action.
       - leaderboard
       - recent solved cases

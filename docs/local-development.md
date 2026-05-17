@@ -65,9 +65,17 @@ events with redacted peer metadata.
 
 ## Site
 
-`debugpath-site` currently exposes renderable route HTML helpers with smoke
-tests. Phase 4 will wire the public Axum and Leptos surface to real or seeded
-game data.
+`debugpath-site` serves the public Axum + Leptos surface with seeded game
+data for local development: SSH entrypoint, leaderboard, recent solves,
+featured incident, player profiles, replay viewer, authoring docs, and case
+quality standards.
+
+```sh
+cargo run -p debugpath-site
+```
+
+By default the site binds to `127.0.0.1:4000`. Override with
+`DEBUGPATH_SITE_ADDR` when another local process owns that port.
 
 ## PostgreSQL
 
