@@ -1,0 +1,8 @@
+recent_orders.sql changed in checkout-api release 2026.05.17-1:
+
+- WHERE account_id = $1
++ WHERE status = 'pending'
++   AND created_at > now() - interval '30 days'
++   AND account_id = $1
+
+The deployed query now filters by status and recency before returning pending confirmations.

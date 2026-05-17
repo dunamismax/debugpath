@@ -1,0 +1,60 @@
+[case]
+id = "case-0001"
+slug = "slow-checkout"
+title = "Slow Checkout"
+summary = "Checkout confirmations slowed from normal sub-100ms reads to multi-second responses after a deploy."
+difficulty = "intro"
+component = "checkout-api"
+starts_at = "2026-05-17T14:05:00Z"
+
+[artifacts]
+brief = "brief.md"
+logs = "logs.ndjson"
+metrics = "metrics.toml"
+schema = "schema.sql"
+rows = ["rows/orders.csv"]
+traces = "traces.json"
+diffs = ["diffs/query-shape.diff"]
+runbooks = ["runbooks/checkout.md"]
+
+[diagnosis]
+root_cause = "missing composite index after query shape change"
+affected_component = "checkout-api orders query"
+blast_radius = "checkout order confirmation reads for pending orders"
+evidence = [
+  "checkout-timeouts-after-deploy",
+  "seq-scan-orders",
+  "query-shape-changed",
+]
+
+[[fixes]]
+id = "add_orders_status_created_at_index"
+title = "Add a composite index for pending order confirmation lookup"
+kind = "root-cause"
+explanation = "Create an index on orders(status, created_at desc) so the new query can find recent pending orders without a full table scan."
+solves = true
+
+[[fixes]]
+id = "raise_checkout_timeout"
+title = "Raise checkout-api timeout to 10 seconds"
+kind = "symptom-mask"
+explanation = "This hides some timeouts but keeps every request doing the same expensive scan."
+solves = false
+
+[[fixes]]
+id = "restart_postgres"
+title = "Restart PostgreSQL"
+kind = "unsafe"
+explanation = "This interrupts all database users and does not change the query plan."
+solves = false
+
+[[hints]]
+id = "compare-before-after-deploy"
+text = "The deploy marker is a stronger signal than the cache warning; compare the query shape before and after the release."
+cost = 75
+evidence_refs = ["query-shape-changed"]
+
+[[false_trails]]
+id = "cache-warning"
+title = "Redis cache warnings appear during the incident window"
+evidence_refs = ["redis-warning-nonblocking"]

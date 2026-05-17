@@ -1,0 +1,6 @@
+{"timestamp":"2026-05-17T14:03:12Z","service":"checkout-api","level":"info","trace_id":"trc_1001","message":"order confirmation completed","latency_ms":82,"evidence_id":"baseline-latency"}
+{"timestamp":"2026-05-17T14:05:03Z","service":"deploy","level":"info","trace_id":"deploy_20260517_1405","message":"checkout-api release 2026.05.17-1 promoted","evidence_id":"deploy-marker"}
+{"timestamp":"2026-05-17T14:06:17Z","service":"checkout-api","level":"warn","trace_id":"trc_1072","message":"order confirmation query exceeded budget","latency_ms":3940,"evidence_id":"checkout-timeouts-after-deploy"}
+{"timestamp":"2026-05-17T14:06:22Z","service":"redis","level":"warn","trace_id":"cache_77","message":"transient reconnect to cache replica; retry succeeded","evidence_id":"redis-warning-nonblocking"}
+{"timestamp":"2026-05-17T14:07:31Z","service":"checkout-api","level":"error","trace_id":"trc_1099","message":"request timed out waiting for recent pending orders","latency_ms":5030,"evidence_id":"checkout-timeouts-after-deploy"}
+{"timestamp":"2026-05-17T14:08:04Z","service":"postgres","level":"warn","trace_id":"pg_219","message":"sequential scan on orders touched 2841921 rows for checkout_recent_orders","evidence_id":"seq-scan-orders"}

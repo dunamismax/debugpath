@@ -1,0 +1,8 @@
+[package]
+name = "debugpath-engine"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+debugpath-content = { workspace = true }
+thiserror = { workspace = true }

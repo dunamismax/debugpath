@@ -1,0 +1,7 @@
+[package]
+name = "debugpath-site"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+debugpath-engine = { workspace = true }

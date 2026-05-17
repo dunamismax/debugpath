@@ -1,0 +1,13 @@
+[scoring]
+max_score = 1000
+time_budget_seconds = 900
+evidence = [
+  "baseline-latency",
+  "deploy-marker",
+  "checkout-timeouts-after-deploy",
+  "redis-warning-nonblocking",
+  "seq-scan-orders",
+  "query-shape-changed",
+]
+root_fix = "add_orders_status_created_at_index"
+symptom_fixes = ["raise_checkout_timeout"]

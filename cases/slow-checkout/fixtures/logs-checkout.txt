@@ -1,0 +1,3 @@
+2026-05-17T14:05:03Z deploy checkout-api release 2026.05.17-1 promoted
+2026-05-17T14:06:17Z checkout-api warn order confirmation query exceeded budget latency_ms=3940 trace_id=trc_1072
+2026-05-17T14:07:31Z checkout-api error request timed out waiting for recent pending orders latency_ms=5030 trace_id=trc_1099

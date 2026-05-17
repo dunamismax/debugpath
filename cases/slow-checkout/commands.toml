@@ -1,0 +1,40 @@
+[[commands]]
+id = "logs-checkout"
+kind = "shell"
+command = "logs checkout-api --since 10m"
+fixture = "fixtures/logs-checkout.txt"
+evidence = ["checkout-timeouts-after-deploy"]
+
+[[commands]]
+id = "metrics-checkout"
+kind = "shell"
+command = "metrics checkout-api latency postgres.cpu redis.hit_rate"
+fixture = "fixtures/metrics-checkout.txt"
+evidence = ["checkout-timeouts-after-deploy", "redis-warning-nonblocking"]
+
+[[commands]]
+id = "sql-explain"
+kind = "sql"
+command = "sql explain checkout_recent_orders"
+fixture = "fixtures/sql-explain.txt"
+evidence = ["seq-scan-orders"]
+
+[[commands]]
+id = "diff-deploy"
+kind = "shell"
+command = "diff deploy checkout-api"
+fixture = "fixtures/diff-deploy.txt"
+evidence = ["query-shape-changed"]
+
+[[commands]]
+id = "runbook-checkout"
+kind = "shell"
+command = "runbook checkout-confirmation"
+fixture = "fixtures/runbook-checkout.txt"
+
+[[commands]]
+id = "restart-postgres"
+kind = "shell"
+command = "restart postgres"
+fixture = "fixtures/restart-postgres.txt"
+damage = 150

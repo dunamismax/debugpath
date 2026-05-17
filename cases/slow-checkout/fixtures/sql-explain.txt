@@ -1,0 +1,8 @@
+Limit  (cost=0.00..99141.24 rows=20 width=72)
+  ->  Sort  (cost=0.00..99141.24 rows=20811 width=72)
+        Sort Key: created_at DESC
+        ->  Seq Scan on orders  (cost=0.00..98210.11 rows=20811 width=72)
+              Filter: ((status = 'pending') AND (created_at > (now() - '30 days'::interval)) AND (account_id = $1))
+              Rows Removed by Filter: 2841921
+
+No index covers status + created_at for this query shape.

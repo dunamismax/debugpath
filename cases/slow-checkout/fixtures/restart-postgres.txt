@@ -1,0 +1,1 @@
+Denied by simulation guard: restarting PostgreSQL would interrupt unrelated traffic and does not address the query plan. Modeled incident damage recorded.

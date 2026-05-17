@@ -1,0 +1,13 @@
+diff --git a/services/checkout/recent_orders.sql b/services/checkout/recent_orders.sql
+index 922ac44..18f5df0 100644
+--- a/services/checkout/recent_orders.sql
++++ b/services/checkout/recent_orders.sql
+@@ -1,5 +1,7 @@
+ SELECT id, account_id, status, created_at, total_cents
+ FROM orders
+-WHERE account_id = $1
++WHERE status = 'pending'
++  AND created_at > now() - interval '30 days'
++  AND account_id = $1
+ ORDER BY created_at DESC
+ LIMIT 20;

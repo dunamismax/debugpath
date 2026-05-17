@@ -1,0 +1,1 @@
+Checkout confirmation should not block on Redis recommendations. When PostgreSQL CPU rises with confirmation latency, inspect the order lookup plan before increasing timeouts.

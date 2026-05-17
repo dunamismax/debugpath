@@ -1,0 +1,31 @@
+{
+  "trace_id": "trc_1099",
+  "root": "checkout.confirmation",
+  "spans": [
+    {
+      "span_id": "span-1",
+      "parent_id": null,
+      "name": "POST /checkout/confirm",
+      "service": "checkout-api",
+      "started_at": "2026-05-17T14:07:26Z",
+      "duration_ms": 5030
+    },
+    {
+      "span_id": "span-2",
+      "parent_id": "span-1",
+      "name": "authorize_payment",
+      "service": "payments",
+      "started_at": "2026-05-17T14:07:26Z",
+      "duration_ms": 118
+    },
+    {
+      "span_id": "span-3",
+      "parent_id": "span-1",
+      "name": "checkout_recent_orders",
+      "service": "postgres",
+      "started_at": "2026-05-17T14:07:26Z",
+      "duration_ms": 4810,
+      "evidence_id": "seq-scan-orders"
+    }
+  ]
+}
