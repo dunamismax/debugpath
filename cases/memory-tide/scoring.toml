@@ -1,0 +1,12 @@
+[scoring]
+max_score = 1000
+time_budget_seconds = 1050
+evidence = [
+  "memory-climb-after-upload-deploy",
+  "full-body-buffering-enabled",
+  "large-upload-ooms",
+  "gc-warning-secondary",
+  "request-rate-normal",
+]
+root_fix = "restore_streaming_body_limit"
+symptom_fixes = ["double_upload_api_memory"]

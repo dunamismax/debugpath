@@ -1,0 +1,6 @@
+{"timestamp":"2026-05-17T17:31:02Z","service":"upload-api","level":"info","message":"deploy 2026.05.17-uploads.2 started","deploy_id":"upl-1747503062"}
+{"timestamp":"2026-05-17T17:35:18Z","service":"upload-api","level":"warn","message":"request body retained for metadata scan","request_id":"req-upl-8831","bytes":681574400,"route":"/archives"}
+{"timestamp":"2026-05-17T17:36:44Z","service":"upload-api","level":"warn","message":"gc pause exceeded target","pause_ms":192,"heap_used_mb":1140}
+{"timestamp":"2026-05-17T17:38:09Z","service":"upload-api","level":"error","message":"worker evicted after memory limit exceeded","worker":"upload-api-7c9f","rss_mb":2048,"request_id":"req-upl-8844"}
+{"timestamp":"2026-05-17T17:39:31Z","service":"edge-router","level":"warn","message":"upstream reset during archive upload","request_id":"req-upl-8844","status":499}
+{"timestamp":"2026-05-17T17:41:12Z","service":"upload-api","level":"info","message":"request rate remains within normal range","requests_per_minute":124}

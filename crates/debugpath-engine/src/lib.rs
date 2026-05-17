@@ -285,7 +285,7 @@ mod tests {
     #[test]
     fn all_seed_cases_can_be_diagnosed_fixed_scored_and_replayed() {
         let cases = load_cases(cases_root()).expect("case collection loads");
-        assert_eq!(cases.len(), 3);
+        assert_eq!(cases.len(), 5);
 
         for case in cases {
             let required_evidence = case.diagnosis.evidence.clone();

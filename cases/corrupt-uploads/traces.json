@@ -1,0 +1,45 @@
+{
+  "trace_id": "trace-corrupt-uploads-772",
+  "root_span": "complete_multipart_upload",
+  "spans": [
+    {
+      "span_id": "span-1",
+      "parent_id": null,
+      "name": "complete_multipart_upload",
+      "service": "upload-assembler",
+      "start": "2026-05-17T18:25:14.000Z",
+      "duration_ms": 5210
+    },
+    {
+      "span_id": "span-2",
+      "parent_id": "span-1",
+      "name": "list_chunks",
+      "service": "object-store",
+      "start": "2026-05-17T18:25:14.020Z",
+      "duration_ms": 91
+    },
+    {
+      "span_id": "span-3",
+      "parent_id": "span-1",
+      "name": "assemble_chunks",
+      "service": "upload-assembler",
+      "start": "2026-05-17T18:25:14.130Z",
+      "duration_ms": 4800,
+      "attributes": {
+        "order": "0,1,10,11,2,3,4,5,6,7,8,9",
+        "retry_chunks": "10"
+      }
+    },
+    {
+      "span_id": "span-4",
+      "parent_id": "span-1",
+      "name": "validate_checksum",
+      "service": "upload-assembler",
+      "start": "2026-05-17T18:25:19.000Z",
+      "duration_ms": 32,
+      "attributes": {
+        "result": "mismatch"
+      }
+    }
+  ]
+}

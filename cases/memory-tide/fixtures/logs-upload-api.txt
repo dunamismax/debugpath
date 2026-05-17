@@ -1,0 +1,5 @@
+2026-05-17T17:31:02Z info upload-api deploy 2026.05.17-uploads.2 started
+2026-05-17T17:35:18Z warn upload-api request body retained for metadata scan request_id=req-upl-8831 bytes=681574400
+2026-05-17T17:36:44Z warn upload-api gc pause exceeded target pause_ms=192 heap_used_mb=1140
+2026-05-17T17:38:09Z error upload-api worker evicted after memory limit exceeded worker=upload-api-7c9f rss_mb=2048 request_id=req-upl-8844
+2026-05-17T17:41:12Z info upload-api request rate remains within normal range requests_per_minute=124

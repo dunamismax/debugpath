@@ -1,0 +1,3 @@
+Restart issued for all upload-api workers.
+Damage: in-flight large uploads were dropped. Memory pressure will return when
+large uploads resume because request bodies are still buffered in full.

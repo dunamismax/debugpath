@@ -1,0 +1,6 @@
+upload_api/body.rs
+- stream request body and enforce MAX_UPLOAD_BYTES while reading
++ hyper::body::to_bytes(req.into_body()).await?
++ parse metadata from the full byte buffer
+
+The new path bypasses the streaming guard and retains the entire upload body.

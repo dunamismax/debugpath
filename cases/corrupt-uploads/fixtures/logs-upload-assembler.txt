@@ -1,0 +1,5 @@
+2026-05-17T18:21:44Z info upload-assembler deploy 2026.05.17-assembler.4 started
+2026-05-17T18:25:13Z warn upload-assembler partial chunk write retried upload_id=arch_772 chunk_id=10 offset=10485760 attempt=2
+2026-05-17T18:25:19Z error upload-assembler checksum mismatch after assembly upload_id=arch_772 expected=sha256:7f4a actual=sha256:129d chunks=12
+2026-05-17T18:27:30Z info upload-assembler small upload completed checksum validation upload_id=img_118 chunks=3
+2026-05-17T18:29:12Z warn upload-assembler assembled chunk order upload_id=arch_781 order=0,1,10,11,2,3,4,5,6,7,8,9

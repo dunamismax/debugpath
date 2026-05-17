@@ -1,0 +1,60 @@
+[case]
+id = "case-0005"
+slug = "corrupt-uploads"
+title = "Corrupt Uploads"
+summary = "Large archive uploads intermittently fail checksum validation after retrying chunk writes."
+difficulty = "intermediate"
+component = "upload-assembler"
+starts_at = "2026-05-17T18:25:00Z"
+
+[artifacts]
+brief = "brief.md"
+logs = "logs.ndjson"
+metrics = "metrics.toml"
+schema = "schema.sql"
+rows = ["rows/upload_chunks.csv"]
+traces = "traces.json"
+diffs = ["diffs/chunk-ordering.diff"]
+runbooks = ["runbooks/chunk-assembly.md"]
+
+[diagnosis]
+root_cause = "chunk reassembly sorts chunk IDs lexicographically after partial-write retries"
+affected_component = "upload assembler chunk ordering"
+blast_radius = "large multipart archive uploads with chunk numbers above 9 and retry attempts"
+evidence = [
+  "checksum-mismatch-large-archives",
+  "lexicographic-chunk-order",
+  "partial-retry-duplicates",
+]
+
+[[fixes]]
+id = "sort_chunks_numerically_and_dedupe_retries"
+title = "Sort chunks numerically and dedupe retry attempts by offset"
+kind = "root-cause"
+explanation = "Parse chunk indexes as integers, select the latest successful write for each offset, and reassemble by numeric position."
+solves = true
+
+[[fixes]]
+id = "increase_upload_retry_count"
+title = "Increase upload retry attempts"
+kind = "symptom-mask"
+explanation = "More retries increase duplicate chunks and do not fix the wrong reassembly order."
+solves = false
+
+[[fixes]]
+id = "purge_upload_bucket"
+title = "Purge the multipart upload bucket"
+kind = "unsafe"
+explanation = "This destroys recoverable uploads and does not change the assembler's ordering logic."
+solves = false
+
+[[hints]]
+id = "inspect-chunk-10"
+text = "The failures start when archives produce chunk 10; compare stored chunk IDs with the assembler order."
+cost = 75
+evidence_refs = ["lexicographic-chunk-order"]
+
+[[false_trails]]
+id = "object-storage-latency"
+title = "Object storage latency is slightly elevated but write acknowledgements succeed"
+evidence_refs = ["storage-latency-secondary"]

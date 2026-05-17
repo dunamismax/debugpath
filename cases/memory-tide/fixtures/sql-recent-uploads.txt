@@ -1,0 +1,5 @@
+id       account_id  filename                  size_bytes  status   created_at
+upl_101  acct_blue   release-bundle.tar         94371840   complete 2026-05-17T17:22:10Z
+upl_102  acct_green  weekly-archive.zip        681574400   failed   2026-05-17T17:35:18Z
+upl_103  acct_green  weekly-archive-retry.zip  704643072   failed   2026-05-17T17:38:09Z
+upl_104  acct_gray   avatar-pack.zip            18874368   complete 2026-05-17T17:39:02Z

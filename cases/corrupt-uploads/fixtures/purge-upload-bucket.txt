@@ -1,0 +1,3 @@
+Purge blocked by safety policy in simulation.
+Damage modeled: deleting multipart staging data would destroy recoverable
+customer uploads and still would not fix assembler ordering.

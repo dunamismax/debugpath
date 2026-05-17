@@ -1,0 +1,18 @@
+upload_api_rss_mb:
+  17:30 421
+  17:34 438
+  17:36 911
+  17:38 1588
+  17:40 1834
+large_upload_p95_mb:
+  17:30 92
+  17:34 96
+  17:36 640
+  17:38 704
+upload_api_cpu_pct:
+  17:30 41
+  17:38 49
+gc_pause_ms:
+  17:30 24
+  17:38 192
+note: request rate is normal; memory tracks upload body size after deploy.

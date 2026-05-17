@@ -1,0 +1,16 @@
+diff --git a/upload_api/body.rs b/upload_api/body.rs
+index 3179abc..ee93210 100644
+--- a/upload_api/body.rs
++++ b/upload_api/body.rs
+@@ -18,10 +18,11 @@ pub async fn extract_upload_metadata(req: Request<Body>) -> Result<Metadata> {
+-    let mut stream = req.into_body();
+-    let metadata = read_metadata_prefix(&mut stream, MAX_METADATA_BYTES).await?;
+-    enforce_body_limit(stream, MAX_UPLOAD_BYTES).await?;
+-    Ok(metadata)
++    let bytes = hyper::body::to_bytes(req.into_body()).await?;
++    let metadata = parse_metadata(&bytes)?;
++    Ok(metadata)
+ }
+ 
+ const MAX_METADATA_BYTES: usize = 1_048_576;
+ const MAX_UPLOAD_BYTES: usize = 67_108_864;

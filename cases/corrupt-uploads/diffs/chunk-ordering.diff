@@ -1,0 +1,14 @@
+diff --git a/assembler/chunks.rs b/assembler/chunks.rs
+index 748f0aa..9441dba 100644
+--- a/assembler/chunks.rs
++++ b/assembler/chunks.rs
+@@ -41,9 +41,8 @@ pub fn ordered_chunks(chunks: Vec<Chunk>) -> Vec<Chunk> {
+-    chunks.sort_by_key(|chunk| chunk.offset_bytes);
+-    chunks.dedup_by_key(|chunk| chunk.offset_bytes);
+-    chunks
++    chunks.sort_by_key(|chunk| chunk.object_key.clone());
++    chunks
+ }
+ 
+ pub fn object_key(upload_id: &str, chunk_id: u32) -> String {
+     format!("{upload_id}/{chunk_id}")

@@ -1,0 +1,6 @@
+{"timestamp":"2026-05-17T18:21:44Z","service":"upload-assembler","level":"info","message":"deploy 2026.05.17-assembler.4 started","deploy_id":"asm-1747506104"}
+{"timestamp":"2026-05-17T18:25:13Z","service":"upload-assembler","level":"warn","message":"partial chunk write retried","upload_id":"arch_772","chunk_id":"10","offset":10485760,"attempt":2}
+{"timestamp":"2026-05-17T18:25:19Z","service":"upload-assembler","level":"error","message":"checksum mismatch after assembly","upload_id":"arch_772","expected":"sha256:7f4a","actual":"sha256:129d","chunks":12}
+{"timestamp":"2026-05-17T18:26:04Z","service":"object-store","level":"info","message":"put acknowledged","upload_id":"arch_772","chunk_id":"10","latency_ms":84}
+{"timestamp":"2026-05-17T18:27:30Z","service":"upload-assembler","level":"info","message":"small upload completed checksum validation","upload_id":"img_118","chunks":3}
+{"timestamp":"2026-05-17T18:29:12Z","service":"upload-assembler","level":"warn","message":"assembled chunk order","upload_id":"arch_781","order":"0,1,10,11,2,3,4,5,6,7,8,9"}

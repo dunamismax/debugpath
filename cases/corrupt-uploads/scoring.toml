@@ -1,0 +1,12 @@
+[scoring]
+max_score = 1000
+time_budget_seconds = 1050
+evidence = [
+  "checksum-mismatch-large-archives",
+  "lexicographic-chunk-order",
+  "partial-retry-duplicates",
+  "storage-latency-secondary",
+  "small-uploads-ok",
+]
+root_fix = "sort_chunks_numerically_and_dedupe_retries"
+symptom_fixes = ["increase_upload_retry_count"]

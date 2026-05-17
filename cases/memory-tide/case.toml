@@ -1,0 +1,60 @@
+[case]
+id = "case-0004"
+slug = "memory-tide"
+title = "Memory Tide"
+summary = "API memory climbs steadily after a deploy that changed request body handling for large uploads."
+difficulty = "intermediate"
+component = "upload-api"
+starts_at = "2026-05-17T17:35:00Z"
+
+[artifacts]
+brief = "brief.md"
+logs = "logs.ndjson"
+metrics = "metrics.toml"
+schema = "schema.sql"
+rows = ["rows/uploads.csv"]
+traces = "traces.json"
+diffs = ["diffs/body-buffering.diff"]
+runbooks = ["runbooks/upload-memory.md"]
+
+[diagnosis]
+root_cause = "unbounded request body buffering after streaming guard bypass"
+affected_component = "upload-api request body middleware"
+blast_radius = "large upload requests on upload-api workers and colocated API traffic during memory pressure"
+evidence = [
+  "memory-climb-after-upload-deploy",
+  "full-body-buffering-enabled",
+  "large-upload-ooms",
+]
+
+[[fixes]]
+id = "restore_streaming_body_limit"
+title = "Restore streaming reads with a bounded body limit"
+kind = "root-cause"
+explanation = "Re-enable streaming request body handling and enforce the 64 MiB per-request limit before buffering can grow with upload size."
+solves = true
+
+[[fixes]]
+id = "double_upload_api_memory"
+title = "Double upload-api memory limits"
+kind = "symptom-mask"
+explanation = "More memory delays worker eviction but the process still buffers entire request bodies under load."
+solves = false
+
+[[fixes]]
+id = "restart_upload_workers"
+title = "Restart every upload-api worker"
+kind = "unsafe"
+explanation = "A full restart drops in-flight uploads and the leak returns as soon as large uploads resume."
+solves = false
+
+[[hints]]
+id = "look-at-request-size"
+text = "The climb tracks large request bodies, not request count; compare the memory series with the upload-size histogram."
+cost = 75
+evidence_refs = ["memory-climb-after-upload-deploy"]
+
+[[false_trails]]
+id = "gc-warning"
+title = "Garbage collection warnings increase during the incident"
+evidence_refs = ["gc-warning-secondary"]

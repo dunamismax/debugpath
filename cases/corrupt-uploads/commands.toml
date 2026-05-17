@@ -1,0 +1,40 @@
+[[commands]]
+id = "logs-upload-assembler"
+kind = "shell"
+command = "logs upload-assembler --since 15m"
+fixture = "fixtures/logs-upload-assembler.txt"
+evidence = ["checksum-mismatch-large-archives", "lexicographic-chunk-order", "partial-retry-duplicates"]
+
+[[commands]]
+id = "metrics-upload-assembler"
+kind = "shell"
+command = "metrics uploads.checksum_failures object_store.latency multipart.retry_rate chunks.p95"
+fixture = "fixtures/metrics-upload-assembler.txt"
+evidence = ["checksum-mismatch-large-archives", "storage-latency-secondary"]
+
+[[commands]]
+id = "sql-upload-chunks"
+kind = "sql"
+command = "sql select chunks for arch_772"
+fixture = "fixtures/sql-upload-chunks.txt"
+evidence = ["partial-retry-duplicates", "lexicographic-chunk-order"]
+
+[[commands]]
+id = "diff-chunk-ordering"
+kind = "shell"
+command = "diff deploy upload-assembler chunks"
+fixture = "fixtures/diff-chunk-ordering.txt"
+evidence = ["lexicographic-chunk-order"]
+
+[[commands]]
+id = "runbook-chunk-assembly"
+kind = "shell"
+command = "runbook chunk-assembly"
+fixture = "fixtures/runbook-chunk-assembly.txt"
+
+[[commands]]
+id = "purge-upload-bucket"
+kind = "shell"
+command = "object-store purge multipart-uploads"
+fixture = "fixtures/purge-upload-bucket.txt"
+damage = 175

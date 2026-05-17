@@ -1,0 +1,10 @@
+upload_id  chunk_id  offset_bytes  attempt  checksum     stored_at
+arch_772   0         0             1        sha256:0010  2026-05-17T18:25:01Z
+arch_772   1         1048576       1        sha256:0011  2026-05-17T18:25:02Z
+arch_772   2         2097152       1        sha256:0012  2026-05-17T18:25:03Z
+arch_772   9         9437184       1        sha256:0019  2026-05-17T18:25:11Z
+arch_772   10        10485760      1        sha256:bad0  2026-05-17T18:25:12Z
+arch_772   10        10485760      2        sha256:0020  2026-05-17T18:25:13Z
+arch_772   11        11534336      1        sha256:0021  2026-05-17T18:25:14Z
+
+assembler_order_from_object_key: 0,1,10,11,2,3,4,5,6,7,8,9

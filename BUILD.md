@@ -155,9 +155,9 @@ Build fewer cases with more craft. The first five target cases are:
       doing repeated full scans after a feature flag enabled extra joins.
 - [x] Green CI, Bad Prod: deploy passes, production returns 502. Root cause is
       config or environment mismatch plus health check path drift.
-- [ ] Memory Tide: memory climbs under load. Root cause is unbounded request
+- [x] Memory Tide: memory climbs under load. Root cause is unbounded request
       body buffering or leaked cache entries.
-- [ ] Corrupt Uploads: large archive uploads intermittently fail. Root cause
+- [x] Corrupt Uploads: large archive uploads intermittently fail. Root cause
       is chunk reassembly ordering or partial-write retry behavior.
 
 MVP requires three polished cases, not all five.

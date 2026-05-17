@@ -1,0 +1,6 @@
+assembler/chunks.rs
+- sort chunks by offset_bytes
+- dedupe chunks by offset_bytes
++ sort chunks by object_key text
+
+Object key text sorts chunk 10 before chunk 2 and leaves retry duplicates.

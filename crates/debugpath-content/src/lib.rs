@@ -559,7 +559,13 @@ mod tests {
             .collect();
         assert_eq!(
             slugs,
-            vec!["green-ci-bad-prod", "pinned-postgres", "slow-checkout"]
+            vec![
+                "corrupt-uploads",
+                "green-ci-bad-prod",
+                "memory-tide",
+                "pinned-postgres",
+                "slow-checkout"
+            ]
         );
     }
 

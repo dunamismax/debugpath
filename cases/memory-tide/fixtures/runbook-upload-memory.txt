@@ -1,0 +1,3 @@
+Upload-api should stream request bodies and read only a metadata prefix.
+Workers have a 2 GiB memory limit. RSS that climbs with large body size points
+to retained request buffers, not a need for higher memory limits.

@@ -1,0 +1,16 @@
+upload_checksum_failures:
+  18:20 0
+  18:26 5
+  18:28 9
+  18:30 13
+object_store_put_latency_ms:
+  18:20 41
+  18:26 84
+  18:28 77
+multipart_retry_rate_pct:
+  18:20 0.8
+  18:26 3.4
+large_archive_chunks_p95:
+  18:20 8
+  18:24 12
+note: storage latency is elevated but writes are acknowledged; checksum failures correlate with chunk count and retries.

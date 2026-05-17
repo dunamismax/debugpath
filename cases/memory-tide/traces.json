@@ -1,0 +1,34 @@
+{
+  "trace_id": "trace-memory-tide-8844",
+  "root_span": "upload_archive",
+  "spans": [
+    {
+      "span_id": "span-1",
+      "parent_id": null,
+      "name": "POST /archives",
+      "service": "upload-api",
+      "start": "2026-05-17T17:38:08.100Z",
+      "duration_ms": 8300
+    },
+    {
+      "span_id": "span-2",
+      "parent_id": "span-1",
+      "name": "read_request_body_for_metadata",
+      "service": "upload-api",
+      "start": "2026-05-17T17:38:08.130Z",
+      "duration_ms": 7900,
+      "attributes": {
+        "bytes_read": 704643072,
+        "streaming": false
+      }
+    },
+    {
+      "span_id": "span-3",
+      "parent_id": "span-1",
+      "name": "write_upload_manifest",
+      "service": "postgres",
+      "start": "2026-05-17T17:38:16.020Z",
+      "duration_ms": 34
+    }
+  ]
+}

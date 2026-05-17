@@ -1,0 +1,40 @@
+[[commands]]
+id = "logs-upload-api"
+kind = "shell"
+command = "logs upload-api --since 15m"
+fixture = "fixtures/logs-upload-api.txt"
+evidence = ["memory-climb-after-upload-deploy", "large-upload-ooms", "gc-warning-secondary"]
+
+[[commands]]
+id = "metrics-upload-api"
+kind = "shell"
+command = "metrics upload-api.rss upload.size_p95 upload-api.cpu gc.pause"
+fixture = "fixtures/metrics-upload-api.txt"
+evidence = ["memory-climb-after-upload-deploy", "large-upload-ooms"]
+
+[[commands]]
+id = "sql-recent-uploads"
+kind = "sql"
+command = "sql select recent uploads"
+fixture = "fixtures/sql-recent-uploads.txt"
+evidence = ["large-upload-ooms"]
+
+[[commands]]
+id = "diff-body-buffering"
+kind = "shell"
+command = "diff deploy upload-api body"
+fixture = "fixtures/diff-body-buffering.txt"
+evidence = ["full-body-buffering-enabled"]
+
+[[commands]]
+id = "runbook-upload-memory"
+kind = "shell"
+command = "runbook upload-memory"
+fixture = "fixtures/runbook-upload-memory.txt"
+
+[[commands]]
+id = "restart-upload-workers"
+kind = "shell"
+command = "restart upload-api --all"
+fixture = "fixtures/restart-upload-workers.txt"
+damage = 150
