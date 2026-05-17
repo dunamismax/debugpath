@@ -148,11 +148,22 @@ fn smoke_site(replay: &[debugpath_engine::ReplayEvent]) {
     );
     assert_smoke(home.contains("Leaderboard"), "site renders leaderboard");
     assert_smoke(home.contains("Recent solves"), "site renders recent solves");
+    assert_smoke(home.contains("/status"), "site links status page");
 
     let replay_html = debugpath_site::render_replay(replay);
     assert_smoke(
         replay_html.contains("diagnosis submitted"),
         "site renders replay events",
+    );
+    let replay_index = debugpath_site::render_replay_index(&data.replays);
+    assert_smoke(
+        replay_index.contains("Replay Viewer"),
+        "site renders replay index",
+    );
+    let status = debugpath_site::render_status(&data);
+    assert_smoke(
+        status.contains("Health checks") && status.contains("/readyz"),
+        "site renders status health checks",
     );
 }
 

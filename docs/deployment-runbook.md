@@ -61,6 +61,65 @@ replays, authoring docs, and case quality standards.
 The site process should expose a health route that verifies the web process is
 alive without requiring production secrets.
 
+Current runtime knobs:
+
+- `DEBUGPATH_SITE_ADDR`: bind address for the Axum listener. Use loopback
+  behind Caddy, for example `127.0.0.1:4000`.
+- `DEBUGPATH_CASES_DIR`: optional path to the Git-authored case fixture root.
+  When set, the site validates the cases on startup and renders the catalog
+  from those fixtures. Startup should fail if the checked-out cases are
+  invalid.
+- `DEBUGPATH_SSH_ENTRYPOINT`: displayed command for the primary product path,
+  normally `ssh debugpath.dev`.
+- `DEBUGPATH_PUBLIC_BASE_URL`: displayed canonical public site URL.
+
+Routes expected by the reverse proxy and release smoke checks:
+
+- `/healthz`: process liveness check, returns `ok`.
+- `/readyz`: readiness check for the current in-process site, returns `ready`.
+- `/status`: human-readable status page showing case, solve, replay, and data
+  source counts.
+
+Recommended Ubuntu service shape for the next deployment pass:
+
+```ini
+[Unit]
+Description=debugpath public site
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=debugpath
+Group=debugpath
+WorkingDirectory=/opt/debugpath/current
+Environment=DEBUGPATH_SITE_ADDR=127.0.0.1:4000
+Environment=DEBUGPATH_CASES_DIR=/opt/debugpath/current/cases
+Environment=DEBUGPATH_SSH_ENTRYPOINT=ssh debugpath.dev
+Environment=DEBUGPATH_PUBLIC_BASE_URL=https://debugpath.dev
+ExecStart=/opt/debugpath/current/target/release/debugpath-site
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/debugpath
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Keep Caddy as the HTTPS edge and proxy only to the loopback site listener. Do
+not point Caddy at a wildcard local address unless there is a deliberate reason
+to expose the Rust process directly.
+
+```caddyfile
+debugpath.dev {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:4000
+}
+```
+
 ## PostgreSQL
 
 Apply migrations in order from `crates/debugpath-db/migrations/`. The first

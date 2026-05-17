@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+debugpath-content = { workspace = true }
 debugpath-engine = { workspace = true }
 axum = "0.8.7"
 leptos = { version = "0.8.14", features = ["ssr"] }

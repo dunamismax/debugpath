@@ -10,8 +10,9 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(addr)
         .await
         .expect("bind debugpath-site listener");
+    let site_data = debugpath_site::site_from_env().expect("load debugpath-site data");
     println!("debugpath-site listening on http://{addr}");
-    axum::serve(listener, debugpath_site::app(debugpath_site::seeded_site()))
+    axum::serve(listener, debugpath_site::app(site_data))
         .await
         .expect("serve debugpath-site");
 }

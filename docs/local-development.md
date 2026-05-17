@@ -77,6 +77,23 @@ cargo run -p debugpath-site
 By default the site binds to `127.0.0.1:4000`. Override with
 `DEBUGPATH_SITE_ADDR` when another local process owns that port.
 
+The site uses seeded public data by default. Point it at the checked-out case
+fixtures when you want the catalog and case detail counts to come from the
+same Git-authored content that powers the SSH game:
+
+```sh
+DEBUGPATH_CASES_DIR=cases cargo run -p debugpath-site
+```
+
+Useful site environment variables:
+
+- `DEBUGPATH_SITE_ADDR`: bind address, default `127.0.0.1:4000`
+- `DEBUGPATH_CASES_DIR`: optional case fixture root to validate and publish
+- `DEBUGPATH_SSH_ENTRYPOINT`: displayed SSH command, default
+  `ssh debugpath.dev`
+- `DEBUGPATH_PUBLIC_BASE_URL`: displayed public URL, default
+  `https://debugpath.dev`
+
 ## PostgreSQL
 
 `debugpath-db` owns migrations under `crates/debugpath-db/migrations/`. The
