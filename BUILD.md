@@ -217,7 +217,7 @@ Exit criteria: a local SSH session can play one complete case end to end.
       - replay viewer
       - authoring docs
       - case quality standards
-- [ ] Add route-level tests and browser checks for the public site.
+- [x] Add route-level tests and browser checks for the public site.
 
 Exit criteria: the web surface reflects real or seeded game data and can
 display a replay.
