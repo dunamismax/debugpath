@@ -177,6 +177,41 @@ fn smoke_ssh() {
         summary.contains(debugpath_ssh::LOCAL_DEV_BIND_ADDR),
         "SSH smoke includes local development bind address",
     );
+
+    let mut controls =
+        debugpath_ssh::abuse::AbuseControls::new(debugpath_ssh::abuse::AbuseConfig {
+            max_sessions_per_peer: 1,
+            max_connections_per_window: 2,
+            window_seconds: 60,
+            max_command_bytes: 32,
+        });
+    assert_smoke(
+        controls.start_session("203.0.113.10:5500", 1)
+            == debugpath_ssh::abuse::AbuseDecision::Accepted,
+        "SSH abuse controls accept first session",
+    );
+    assert_smoke(
+        controls.start_session("203.0.113.10:5501", 2)
+            == debugpath_ssh::abuse::AbuseDecision::Rejected(
+                debugpath_ssh::abuse::RejectReason::TooManySessions,
+            ),
+        "SSH abuse controls enforce session limits",
+    );
+    controls.end_session("203.0.113.10:5500", 3);
+    assert_smoke(
+        controls.inspect_command("203.0.113.10:5500", "", 4)
+            == debugpath_ssh::abuse::AbuseDecision::Rejected(
+                debugpath_ssh::abuse::RejectReason::EmptyCommand,
+            ),
+        "SSH abuse controls reject invalid commands",
+    );
+    assert_smoke(
+        controls
+            .audit_events()
+            .iter()
+            .all(|event| event.peer != "203.0.113.10"),
+        "SSH audit events redact peer metadata",
+    );
 }
 
 fn assert_smoke(condition: bool, message: &str) {

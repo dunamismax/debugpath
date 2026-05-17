@@ -14,9 +14,10 @@ Last reviewed: 2026-05-17.
 
 Observed on 2026-05-17:
 
-- The repo contains the initial Rust workspace, foundation docs, three valid
+- The repo contains the initial Rust workspace, foundation docs, five valid
   seed cases, content validation, deterministic engine scaffolding,
-  route/render smoke tests, and a `just`-based local gate.
+  SSH abuse-control primitives, route/render smoke tests, and a `just`-based
+  local gate.
 - The domain `debugpath.dev` is owned by Stephen and configured on
   Cloudflare.
 - No production SSH server, full Ratatui app, PostgreSQL migrations, or full
@@ -228,7 +229,7 @@ display a replay.
 - [x] Add case authoring guide and review checklist.
 - [x] Add operational runbook for deploying the SSH server, site, database,
       and worker.
-- [ ] Add rate limiting, session limits, audit logs, and basic abuse controls.
+- [x] Add rate limiting, session limits, audit logs, and basic abuse controls.
 - [x] Add backup and restore notes for PostgreSQL.
 - [x] Add release smoke checks for SSH, TUI, site, database migrations, and
       replay rendering.

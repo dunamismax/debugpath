@@ -37,9 +37,14 @@ shape for logs and case metadata.
 
 ## SSH
 
-`debugpath-ssh` is scaffolded but does not yet start a local SSH server. Phase 3
-will add safe development auth and local bind settings that do not depend on
-`debugpath.dev` DNS.
+`debugpath-ssh` is scaffolded but does not yet start a local SSH server. The
+crate already owns the production entrypoint constants and deterministic
+abuse-control primitives for the future exposed SSH edge: per-peer connection
+rate windows, active session limits, command-size checks, and structured audit
+events with redacted peer metadata.
+
+Phase 3 will add safe development auth, local bind settings, and terminal IO
+that do not depend on `debugpath.dev` DNS.
 
 ## Site
 

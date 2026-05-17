@@ -44,6 +44,11 @@ Required production controls before public launch:
 - structured audit logs with redaction
 - graceful disconnect and terminal resize handling
 
+The current `debugpath-ssh` crate includes deterministic primitives for the
+abuse-control pieces: per-peer rate windows, active session caps, command-size
+rejection, and redacted audit event records. Wire those controls into the real
+SSH accept loop before the service is exposed publicly.
+
 Local development must not depend on `debugpath.dev` DNS.
 
 ## Site
