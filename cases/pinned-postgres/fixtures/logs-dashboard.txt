@@ -1,0 +1,3 @@
+2026-05-17T15:19:58Z feature-flags info enabled support_dashboard_extra_joins for cohort support-managers
+2026-05-17T15:20:19Z analytics-dashboard warn account activity panel render exceeded 5000ms request_id=req_4412
+2026-05-17T15:24:13Z analytics-dashboard error slow query sample dashboard_account_activity duration_ms=11942 rows=250 limit=50

@@ -1,0 +1,40 @@
+[[commands]]
+id = "logs-dashboard"
+kind = "shell"
+command = "logs analytics-dashboard --since 15m"
+fixture = "fixtures/logs-dashboard.txt"
+evidence = ["dashboard-flag-enabled", "dashboard-latency"]
+
+[[commands]]
+id = "metrics-postgres"
+kind = "shell"
+command = "metrics postgres.cpu dashboard.latency checkout.latency autovacuum.workers"
+fixture = "fixtures/metrics-postgres.txt"
+evidence = ["shared-postgres-cpu-pinned", "autovacuum-noise"]
+
+[[commands]]
+id = "sql-pg-stat-statements"
+kind = "sql"
+command = "sql top pg_stat_statements"
+fixture = "fixtures/sql-pg-stat-statements.txt"
+evidence = ["repeated-full-scans"]
+
+[[commands]]
+id = "diff-feature-flag"
+kind = "shell"
+command = "diff feature-flags analytics-dashboard"
+fixture = "fixtures/diff-feature-flag.txt"
+evidence = ["dashboard-flag-enabled"]
+
+[[commands]]
+id = "runbook-dashboard"
+kind = "shell"
+command = "runbook analytics-dashboard"
+fixture = "fixtures/runbook-dashboard.txt"
+
+[[commands]]
+id = "kill-dashboard-sessions"
+kind = "sql"
+command = "sql kill dashboard sessions"
+fixture = "fixtures/kill-dashboard-sessions.txt"
+damage = 125

@@ -1,0 +1,40 @@
+[[commands]]
+id = "logs-edge"
+kind = "shell"
+command = "logs edge-router --since 10m"
+fixture = "fixtures/logs-edge.txt"
+evidence = ["prod-health-path-drift", "edge-502s"]
+
+[[commands]]
+id = "metrics-edge"
+kind = "shell"
+command = "metrics edge.5xx healthy_upstreams service.readyz retries"
+fixture = "fixtures/metrics-edge.txt"
+evidence = ["edge-502s", "service-readyz-ok", "retry-no-help"]
+
+[[commands]]
+id = "sql-deploys"
+kind = "sql"
+command = "sql select latest deploy"
+fixture = "fixtures/sql-deploys.txt"
+evidence = ["ci-green"]
+
+[[commands]]
+id = "diff-health-path"
+kind = "shell"
+command = "diff deploy web-gateway health"
+fixture = "fixtures/diff-health-path.txt"
+evidence = ["prod-health-path-drift"]
+
+[[commands]]
+id = "runbook-deploy-health"
+kind = "shell"
+command = "runbook deploy-health"
+fixture = "fixtures/runbook-deploy-health.txt"
+
+[[commands]]
+id = "disable-health-checks"
+kind = "shell"
+command = "edge disable health-checks web-gateway"
+fixture = "fixtures/disable-health-checks.txt"
+damage = 150

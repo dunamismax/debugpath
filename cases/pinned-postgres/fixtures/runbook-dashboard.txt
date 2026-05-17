@@ -1,0 +1,2 @@
+Check feature flags and pg_stat_statements before restarting Postgres.
+If one dashboard query dominates total time, disable the flag and prepare an indexed aggregate.

@@ -1,0 +1,2 @@
+Compare CI smoke path, service route diff, and production edge health path.
+Prefer aligning the health path over disabling checks.

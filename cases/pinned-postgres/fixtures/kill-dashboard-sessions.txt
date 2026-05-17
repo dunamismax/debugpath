@@ -1,0 +1,3 @@
+terminated 18 dashboard-ro sessions
+new sessions reconnected within 20 seconds
+operator dashboards lost in-flight filters

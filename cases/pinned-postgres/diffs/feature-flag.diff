@@ -1,0 +1,6 @@
+diff --git a/config/feature-flags.toml b/config/feature-flags.toml
+@@
+ [analytics_dashboard]
+-support_dashboard_extra_joins = false
++support_dashboard_extra_joins = true
+ rollout = "support-managers"

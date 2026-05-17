@@ -224,12 +224,16 @@ fn same_answer(left: &str, right: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use debugpath_content::load_case_dir;
+    use debugpath_content::{load_case_dir, load_cases};
     use std::path::PathBuf;
 
     fn session() -> Session {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../cases/slow-checkout");
         Session::new(load_case_dir(root).expect("seed case loads"))
+    }
+
+    fn cases_root() -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../cases")
     }
 
     #[test]
@@ -276,5 +280,58 @@ mod tests {
         assert!(score.fix_solved);
         assert_eq!(score.evidence_found, 3);
         assert!(score.total > 800);
+    }
+
+    #[test]
+    fn all_seed_cases_can_be_diagnosed_fixed_scored_and_replayed() {
+        let cases = load_cases(cases_root()).expect("case collection loads");
+        assert_eq!(cases.len(), 3);
+
+        for case in cases {
+            let required_evidence = case.diagnosis.evidence.clone();
+            let root_cause = case.diagnosis.root_cause.clone();
+            let affected_component = case.diagnosis.affected_component.clone();
+            let blast_radius = case.diagnosis.blast_radius.clone();
+            let root_fix = case.scoring.root_fix.clone();
+            let commands: Vec<_> = case
+                .commands
+                .iter()
+                .filter(|command| {
+                    command
+                        .evidence
+                        .iter()
+                        .any(|evidence| required_evidence.contains(evidence))
+                })
+                .map(|command| command.command.clone())
+                .collect();
+
+            let mut session = Session::new(case);
+            for command in commands {
+                session
+                    .run_command(&command)
+                    .expect("evidence command runs");
+            }
+            session
+                .submit_diagnosis(DiagnosisSubmission {
+                    root_cause,
+                    evidence: required_evidence.clone(),
+                    affected_component,
+                    proposed_fix: root_fix.clone(),
+                    blast_radius,
+                })
+                .expect("diagnosis accepted");
+            session.apply_fix(&root_fix).expect("root fix accepted");
+
+            let score = session.score();
+            assert!(score.root_cause_correct);
+            assert!(score.fix_solved);
+            assert_eq!(score.evidence_found, required_evidence.len());
+            assert!(
+                session
+                    .replay()
+                    .iter()
+                    .any(|event| matches!(event, ReplayEvent::DiagnosisSubmitted))
+            );
+        }
     }
 }

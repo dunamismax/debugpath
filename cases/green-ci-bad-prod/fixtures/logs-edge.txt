@@ -1,0 +1,3 @@
+2026-05-17T16:41:07Z edge-router warn upstream web-gateway-2 health probe GET /healthz returned 404
+2026-05-17T16:41:28Z edge-router error no healthy upstreams for web-gateway route=/ status=502
+2026-05-17T16:43:33Z edge-router warn retry budget exhausted route=/checkout attempts=3

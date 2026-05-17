@@ -1,0 +1,6 @@
+{"timestamp":"2026-05-17T16:36:11Z","service":"ci","level":"info","message":"build web-gateway 8f4c92 passed smoke GET /readyz","evidence_id":"ci-green"}
+{"timestamp":"2026-05-17T16:40:02Z","service":"deploy","level":"info","message":"rolled web-gateway image sha256:8f4c92 to production","evidence_id":"deploy-marker"}
+{"timestamp":"2026-05-17T16:41:07Z","service":"edge-router","level":"warn","message":"upstream web-gateway-2 health probe GET /healthz returned 404","evidence_id":"prod-health-path-drift"}
+{"timestamp":"2026-05-17T16:41:28Z","service":"edge-router","level":"error","message":"no healthy upstreams for web-gateway route=/ status=502","evidence_id":"edge-502s"}
+{"timestamp":"2026-05-17T16:42:16Z","service":"web-gateway","level":"info","message":"GET /readyz 200 kube-probe/1.31","evidence_id":"service-readyz-ok"}
+{"timestamp":"2026-05-17T16:43:33Z","service":"edge-router","level":"warn","message":"retry budget exhausted route=/checkout attempts=3","evidence_id":"retry-no-help"}

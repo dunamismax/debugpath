@@ -14,9 +14,9 @@ Last reviewed: 2026-05-17.
 
 Observed on 2026-05-17:
 
-- The repo contains the initial Rust workspace, foundation docs, a valid seed
-  case, content validation, deterministic engine scaffolding, route/render smoke
-  tests, and a `just`-based local gate.
+- The repo contains the initial Rust workspace, foundation docs, three valid
+  seed cases, content validation, deterministic engine scaffolding,
+  route/render smoke tests, and a `just`-based local gate.
 - The domain `debugpath.dev` is owned by Stephen and configured on
   Cloudflare.
 - No production SSH server, full Ratatui app, PostgreSQL migrations, or full
@@ -124,7 +124,7 @@ MVP means the core game is usable end to end:
 - [ ] Local SSH development mode works without production DNS or Cloudflare
       changes.
 - [ ] One Ratatui session runs per player connection.
-- [ ] Three polished deterministic cases ship with realistic artifacts and at
+- [x] Three polished deterministic cases ship with realistic artifacts and at
       least one plausible false trail each.
 - [x] Structured case loader validates cases before runtime.
 - [ ] Player can browse brief, logs, metrics, shell output, SQL output,
@@ -151,9 +151,9 @@ Build fewer cases with more craft. The first five target cases are:
 
 - [x] Slow Checkout: API latency jumps from 80ms to 4s after a deploy. Root
       cause is a missing database index exposed by a changed query shape.
-- [ ] Pinned Postgres: database CPU is maxed. Root cause is a dashboard query
+- [x] Pinned Postgres: database CPU is maxed. Root cause is a dashboard query
       doing repeated full scans after a feature flag enabled extra joins.
-- [ ] Green CI, Bad Prod: deploy passes, production returns 502. Root cause is
+- [x] Green CI, Bad Prod: deploy passes, production returns 502. Root cause is
       config or environment mismatch plus health check path drift.
 - [ ] Memory Tide: memory climbs under load. Root cause is unbounded request
       body buffering or leaked cache entries.
@@ -224,7 +224,7 @@ display a replay.
 
 ### Phase 5 - MVP Hardening
 
-- [ ] Ship three polished cases.
+- [x] Ship three polished cases.
 - [ ] Add case authoring guide and review checklist.
 - [ ] Add operational runbook for deploying the SSH server, site, database,
       and worker.

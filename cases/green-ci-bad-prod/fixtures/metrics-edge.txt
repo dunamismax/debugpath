@@ -1,0 +1,6 @@
+edge_5xx_rate: 0.001 -> 0.02 -> 0.71 -> 0.73
+healthy_upstreams: 6 -> 6 -> 0 -> 0
+service_readyz_success_rate: 1.0 -> 1.0 -> 1.0 -> 1.0
+edge_retry_attempts_per_request: 0.0 -> 0.4 -> 3.0 -> 3.0
+
+The service readiness endpoint stays healthy while the edge has zero healthy upstreams.

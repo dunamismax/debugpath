@@ -1,0 +1,3 @@
+edge health checks disabled for web-gateway
+traffic is now routed without upstream readiness filtering
+risk: degraded or booting instances can receive production requests

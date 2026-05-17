@@ -1,0 +1,6 @@
+postgres_cpu_percent: 48 -> 97 -> 99 -> 98
+analytics_dashboard_p95_ms: 310 -> 5210 -> 11480 -> 12040
+checkout_orders_read_p95_ms: 82 -> 210 -> 730 -> 810
+autovacuum_workers: 1 -> 1 -> 0 -> 0
+
+Autovacuum exits while CPU remains pinned, so it is correlated noise, not the driver.

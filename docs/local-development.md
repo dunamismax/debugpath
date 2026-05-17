@@ -31,7 +31,8 @@ just validate-cases
 ```
 
 The validator checks required metadata, artifact references, command fixtures,
-diagnosis evidence, root-cause fixes, duplicate slugs, and basic timestamp
+diagnosis evidence, hint and false-trail evidence references, root-cause and
+symptom fixes, duplicate authored IDs, duplicate slugs, and basic timestamp
 shape for logs and case metadata.
 
 ## SSH

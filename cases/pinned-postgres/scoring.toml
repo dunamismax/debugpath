@@ -1,0 +1,13 @@
+[scoring]
+max_score = 1000
+time_budget_seconds = 900
+evidence = [
+  "autovacuum-noise",
+  "dashboard-flag-enabled",
+  "dashboard-latency",
+  "dashboard-pool",
+  "repeated-full-scans",
+  "shared-postgres-cpu-pinned",
+]
+root_fix = "disable_dashboard_extra_joins"
+symptom_fixes = ["increase_postgres_cpu_limit"]

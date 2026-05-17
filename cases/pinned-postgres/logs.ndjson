@@ -1,0 +1,6 @@
+{"timestamp":"2026-05-17T15:17:44Z","service":"postgres","level":"info","message":"automatic vacuum of table public.events completed","evidence_id":"autovacuum-noise"}
+{"timestamp":"2026-05-17T15:19:58Z","service":"feature-flags","level":"info","message":"enabled support_dashboard_extra_joins for cohort support-managers","evidence_id":"dashboard-flag-enabled"}
+{"timestamp":"2026-05-17T15:20:19Z","service":"analytics-dashboard","level":"warn","message":"account activity panel render exceeded 5000ms request_id=req_4412","evidence_id":"dashboard-latency"}
+{"timestamp":"2026-05-17T15:21:02Z","service":"postgres","level":"warn","message":"statement timeout disabled for dashboard connection pool dashboard-ro","evidence_id":"dashboard-pool"}
+{"timestamp":"2026-05-17T15:22:37Z","service":"checkout-api","level":"warn","message":"orders read p95 crossed 700ms while postgres cpu > 95%","evidence_id":"shared-postgres-cpu-pinned"}
+{"timestamp":"2026-05-17T15:24:13Z","service":"analytics-dashboard","level":"error","message":"slow query sample dashboard_account_activity duration_ms=11942 rows=250 limit=50","evidence_id":"repeated-full-scans"}

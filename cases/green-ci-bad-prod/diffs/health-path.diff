@@ -1,0 +1,9 @@
+diff --git a/services/web-gateway/src/health.rs b/services/web-gateway/src/health.rs
+@@
+-route("/healthz", health)
++route("/readyz", ready)
+
+diff --git a/edge/prod-web-gateway.toml b/edge/prod-web-gateway.toml
+@@
+-health_path = "/healthz"
++health_path = "/healthz"

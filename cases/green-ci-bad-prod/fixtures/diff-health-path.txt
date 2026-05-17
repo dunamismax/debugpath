@@ -1,0 +1,8 @@
+services/web-gateway/src/health.rs
+- route("/healthz", health)
++ route("/readyz", ready)
+
+edge/prod-web-gateway.toml
+  health_path = "/healthz"
+
+CI smoke follows /readyz, production edge still probes /healthz.

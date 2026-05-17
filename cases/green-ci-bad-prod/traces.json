@@ -1,0 +1,24 @@
+{
+  "trace_id": "trc_3307",
+  "root": "edge.request",
+  "spans": [
+    {
+      "span_id": "span-1",
+      "parent_id": null,
+      "name": "GET /checkout",
+      "service": "edge-router",
+      "started_at": "2026-05-17T16:42:58Z",
+      "duration_ms": 74
+    },
+    {
+      "span_id": "span-2",
+      "parent_id": "span-1",
+      "name": "select_healthy_upstream",
+      "service": "edge-router",
+      "started_at": "2026-05-17T16:42:58Z",
+      "duration_ms": 3,
+      "evidence_id": "edge-502s"
+    }
+  ],
+  "error": "no healthy upstreams"
+}

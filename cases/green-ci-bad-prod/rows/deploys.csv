@@ -1,0 +1,3 @@
+id,service,image_digest,deployed_at,ci_status
+9001,web-gateway,sha256:8f4c92,2026-05-17T16:40:02Z,passed
+9000,web-gateway,sha256:71aa10,2026-05-16T18:12:44Z,passed

@@ -1,0 +1,23 @@
+{
+  "trace_id": "trc_2204",
+  "root": "dashboard.account_activity",
+  "spans": [
+    {
+      "span_id": "span-1",
+      "parent_id": null,
+      "name": "GET /support/accounts/activity",
+      "service": "analytics-dashboard",
+      "started_at": "2026-05-17T15:24:10Z",
+      "duration_ms": 12030
+    },
+    {
+      "span_id": "span-2",
+      "parent_id": "span-1",
+      "name": "dashboard_account_activity",
+      "service": "postgres",
+      "started_at": "2026-05-17T15:24:10Z",
+      "duration_ms": 11942,
+      "evidence_id": "repeated-full-scans"
+    }
+  ]
+}

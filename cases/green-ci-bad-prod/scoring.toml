@@ -1,0 +1,13 @@
+[scoring]
+max_score = 1000
+time_budget_seconds = 900
+evidence = [
+  "ci-green",
+  "deploy-marker",
+  "prod-health-path-drift",
+  "edge-502s",
+  "service-readyz-ok",
+  "retry-no-help",
+]
+root_fix = "align_prod_health_path"
+symptom_fixes = ["retry_edge_requests"]

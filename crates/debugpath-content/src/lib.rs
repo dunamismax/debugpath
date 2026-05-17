@@ -39,6 +39,8 @@ pub enum ContentError {
     UnknownScoringEvidence { case: String, evidence: String },
     #[error("{case}: scoring root_fix {fix} is not an authored fix")]
     UnknownRootFix { case: String, fix: String },
+    #[error("{case}: scoring symptom_fix {fix} is not an authored fix")]
+    UnknownSymptomFix { case: String, fix: String },
     #[error("{case}: diagnosis expectation has no evidence path")]
     DiagnosisWithoutEvidence { case: String },
     #[error("{case}: fix set has no root-cause fix")]
@@ -331,14 +333,18 @@ fn load_command_outputs(root: &Path, case: &str, commands: &mut [CommandFixture]
 }
 
 fn validate_case(case: &Case) -> Result<()> {
-    let evidence_ids: BTreeSet<_> = case.scoring.evidence.iter().cloned().collect();
+    let evidence_ids = validate_unique_ids(
+        &case.metadata.slug,
+        "evidence",
+        case.scoring.evidence.iter().map(String::as_str),
+    )?;
     if case.diagnosis.evidence.is_empty() {
         return Err(ContentError::DiagnosisWithoutEvidence {
             case: case.metadata.slug.clone(),
         });
     }
     for evidence in &case.diagnosis.evidence {
-        if !evidence_ids.contains(evidence) {
+        if !evidence_ids.contains(evidence.as_str()) {
             return Err(ContentError::UnknownScoringEvidence {
                 case: case.metadata.slug.clone(),
                 evidence: evidence.clone(),
@@ -347,7 +353,27 @@ fn validate_case(case: &Case) -> Result<()> {
     }
     for command in &case.commands {
         for evidence in &command.evidence {
-            if !evidence_ids.contains(evidence) {
+            if !evidence_ids.contains(evidence.as_str()) {
+                return Err(ContentError::UnknownScoringEvidence {
+                    case: case.metadata.slug.clone(),
+                    evidence: evidence.clone(),
+                });
+            }
+        }
+    }
+    for hint in &case.hints {
+        for evidence in &hint.evidence_refs {
+            if !evidence_ids.contains(evidence.as_str()) {
+                return Err(ContentError::UnknownScoringEvidence {
+                    case: case.metadata.slug.clone(),
+                    evidence: evidence.clone(),
+                });
+            }
+        }
+    }
+    for false_trail in &case.false_trails {
+        for evidence in &false_trail.evidence_refs {
+            if !evidence_ids.contains(evidence.as_str()) {
                 return Err(ContentError::UnknownScoringEvidence {
                     case: case.metadata.slug.clone(),
                     evidence: evidence.clone(),
@@ -356,12 +382,36 @@ fn validate_case(case: &Case) -> Result<()> {
         }
     }
 
-    let fix_ids: BTreeSet<_> = case.fixes.iter().map(|fix| fix.id.as_str()).collect();
+    let fix_ids = validate_unique_ids(
+        &case.metadata.slug,
+        "fix",
+        case.fixes.iter().map(|fix| fix.id.as_str()),
+    )?;
+    validate_unique_ids(
+        &case.metadata.slug,
+        "hint",
+        case.hints.iter().map(|hint| hint.id.as_str()),
+    )?;
+    validate_unique_ids(
+        &case.metadata.slug,
+        "false trail",
+        case.false_trails
+            .iter()
+            .map(|false_trail| false_trail.id.as_str()),
+    )?;
     if !fix_ids.contains(case.scoring.root_fix.as_str()) {
         return Err(ContentError::UnknownRootFix {
             case: case.metadata.slug.clone(),
             fix: case.scoring.root_fix.clone(),
         });
+    }
+    for symptom_fix in &case.scoring.symptom_fixes {
+        if !fix_ids.contains(symptom_fix.as_str()) {
+            return Err(ContentError::UnknownSymptomFix {
+                case: case.metadata.slug.clone(),
+                fix: symptom_fix.clone(),
+            });
+        }
     }
     if !case
         .fixes
@@ -373,6 +423,24 @@ fn validate_case(case: &Case) -> Result<()> {
         });
     }
     Ok(())
+}
+
+fn validate_unique_ids<'a>(
+    case: &str,
+    kind: &'static str,
+    ids: impl Iterator<Item = &'a str>,
+) -> Result<BTreeSet<&'a str>> {
+    let mut unique = BTreeSet::new();
+    for id in ids {
+        if !unique.insert(id) {
+            return Err(ContentError::DuplicateId {
+                case: case.to_owned(),
+                kind,
+                id: id.to_owned(),
+            });
+        }
+    }
+    Ok(unique)
 }
 
 fn read_required_string(root: &Path, case: &str, rel: &Path) -> Result<String> {
@@ -462,6 +530,10 @@ mod tests {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../cases/slow-checkout")
     }
 
+    fn fixture_cases_root() -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../cases")
+    }
+
     #[test]
     fn loads_seed_case_artifacts_and_commands() {
         let case = load_case_dir(fixture_case()).expect("seed case loads");
@@ -480,9 +552,54 @@ mod tests {
 
     #[test]
     fn validates_case_collection_without_duplicate_slugs() {
-        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../cases");
-        let cases = load_cases(root).expect("case collection loads");
-        assert_eq!(cases.len(), 1);
-        assert_eq!(cases[0].metadata.title, "Slow Checkout");
+        let cases = load_cases(fixture_cases_root()).expect("case collection loads");
+        let slugs: Vec<_> = cases
+            .iter()
+            .map(|case| case.metadata.slug.as_str())
+            .collect();
+        assert_eq!(
+            slugs,
+            vec!["green-ci-bad-prod", "pinned-postgres", "slow-checkout"]
+        );
+    }
+
+    #[test]
+    fn rejects_hint_or_false_trail_evidence_outside_scoring_rules() {
+        let mut case = load_case_dir(fixture_case()).expect("seed case loads");
+        case.hints[0]
+            .evidence_refs
+            .push("not-authored-evidence".to_owned());
+        assert!(matches!(
+            validate_case(&case),
+            Err(ContentError::UnknownScoringEvidence { evidence, .. })
+                if evidence == "not-authored-evidence"
+        ));
+
+        let mut case = load_case_dir(fixture_case()).expect("seed case loads");
+        case.false_trails[0]
+            .evidence_refs
+            .push("missing-false-trail-evidence".to_owned());
+        assert!(matches!(
+            validate_case(&case),
+            Err(ContentError::UnknownScoringEvidence { evidence, .. })
+                if evidence == "missing-false-trail-evidence"
+        ));
+    }
+
+    #[test]
+    fn rejects_duplicate_authored_ids_and_unknown_symptom_fixes() {
+        let mut case = load_case_dir(fixture_case()).expect("seed case loads");
+        case.fixes.push(case.fixes[0].clone());
+        assert!(matches!(
+            validate_case(&case),
+            Err(ContentError::DuplicateId { kind: "fix", .. })
+        ));
+
+        let mut case = load_case_dir(fixture_case()).expect("seed case loads");
+        case.scoring.symptom_fixes.push("missing-fix".to_owned());
+        assert!(matches!(
+            validate_case(&case),
+            Err(ContentError::UnknownSymptomFix { fix, .. }) if fix == "missing-fix"
+        ));
     }
 }

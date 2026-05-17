@@ -1,0 +1,4 @@
+config/feature-flags.toml
+- support_dashboard_extra_joins = false
++ support_dashboard_extra_joins = true
+rollout = "support-managers"

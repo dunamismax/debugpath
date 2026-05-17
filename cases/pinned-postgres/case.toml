@@ -1,0 +1,60 @@
+[case]
+id = "case-0002"
+slug = "pinned-postgres"
+title = "Pinned Postgres"
+summary = "PostgreSQL CPU is pinned after a feature flag enables an expensive dashboard query."
+difficulty = "intro"
+component = "analytics-dashboard"
+starts_at = "2026-05-17T15:20:00Z"
+
+[artifacts]
+brief = "brief.md"
+logs = "logs.ndjson"
+metrics = "metrics.toml"
+schema = "schema.sql"
+rows = ["rows/accounts.csv"]
+traces = "traces.json"
+diffs = ["diffs/feature-flag.diff"]
+runbooks = ["runbooks/dashboard.md"]
+
+[diagnosis]
+root_cause = "feature flag enabled dashboard query doing repeated full scans"
+affected_component = "analytics dashboard account activity query"
+blast_radius = "internal analytics dashboards and shared Postgres CPU for checkout reads"
+evidence = [
+  "dashboard-flag-enabled",
+  "repeated-full-scans",
+  "shared-postgres-cpu-pinned",
+]
+
+[[fixes]]
+id = "disable_dashboard_extra_joins"
+title = "Disable the extra joins flag and ship an indexed aggregate"
+kind = "root-cause"
+explanation = "Turn off the new dashboard path, then replace the per-refresh full scans with a pre-aggregated or indexed query."
+solves = true
+
+[[fixes]]
+id = "increase_postgres_cpu_limit"
+title = "Increase the PostgreSQL CPU limit"
+kind = "symptom-mask"
+explanation = "More CPU may lower queueing briefly, but every dashboard refresh still repeats the expensive scans."
+solves = false
+
+[[fixes]]
+id = "kill_all_dashboard_sessions"
+title = "Kill every dashboard database session"
+kind = "unsafe"
+explanation = "This interrupts operators during the incident and the next dashboard refresh recreates the same workload."
+solves = false
+
+[[hints]]
+id = "follow-the-flag"
+text = "The CPU spike starts at the same minute as an analytics feature flag rollout; compare that with the slow query sample."
+cost = 75
+evidence_refs = ["dashboard-flag-enabled"]
+
+[[false_trails]]
+id = "autovacuum-noise"
+title = "Autovacuum messages appear near the incident window"
+evidence_refs = ["autovacuum-noise"]

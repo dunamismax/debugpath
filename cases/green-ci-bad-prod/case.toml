@@ -1,0 +1,60 @@
+[case]
+id = "case-0003"
+slug = "green-ci-bad-prod"
+title = "Green CI, Bad Prod"
+summary = "A passing deploy returns 502 in production because the service and health check disagree on the live path."
+difficulty = "intro"
+component = "edge-router"
+starts_at = "2026-05-17T16:40:00Z"
+
+[artifacts]
+brief = "brief.md"
+logs = "logs.ndjson"
+metrics = "metrics.toml"
+schema = "schema.sql"
+rows = ["rows/deploys.csv"]
+traces = "traces.json"
+diffs = ["diffs/health-path.diff"]
+runbooks = ["runbooks/deploy-health.md"]
+
+[diagnosis]
+root_cause = "production health check path drift after deploy"
+affected_component = "edge router upstream health check"
+blast_radius = "all production web requests routed through the edge"
+evidence = [
+  "ci-green",
+  "prod-health-path-drift",
+  "edge-502s",
+]
+
+[[fixes]]
+id = "align_prod_health_path"
+title = "Align production health check with the deployed service path"
+kind = "root-cause"
+explanation = "Update the production router health check to `/readyz` or restore `/healthz` in the service so healthy instances stay in rotation."
+solves = true
+
+[[fixes]]
+id = "retry_edge_requests"
+title = "Increase edge retry attempts"
+kind = "symptom-mask"
+explanation = "Retries increase load and cannot help when every upstream is marked unhealthy."
+solves = false
+
+[[fixes]]
+id = "disable_health_checks"
+title = "Disable upstream health checks"
+kind = "unsafe"
+explanation = "This may send traffic to broken instances and removes an important production safety signal."
+solves = false
+
+[[hints]]
+id = "compare-ci-and-prod-health"
+text = "CI validates `/readyz`; production routing is still probing a different path."
+cost = 75
+evidence_refs = ["prod-health-path-drift"]
+
+[[false_trails]]
+id = "image-digest-match"
+title = "The production image digest matches the CI artifact"
+evidence_refs = ["ci-green"]

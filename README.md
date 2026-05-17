@@ -13,8 +13,8 @@ shell output, packet snippets, customer reports, runbooks, and an incident
 timeline. The goal is not to guess the answer. The goal is to investigate,
 form a hypothesis, find evidence, test it, and fix the root cause.
 
-The project is in early implementation. The Rust workspace, first deterministic
-case fixture, content loader, and engine scaffold are in place. The active build
+The project is in early implementation. The Rust workspace, three deterministic
+case fixtures, content loader, and engine scaffold are in place. The active build
 plan lives in [`BUILD.md`](BUILD.md), and durable repo rules live in
 [`AGENTS.md`](AGENTS.md).
 

@@ -1,0 +1,9 @@
+query: dashboard_account_activity
+calls_per_minute: 42
+mean_time_ms: 11388
+rows_per_call: 250
+plan: Nested Loop
+  -> Seq Scan on accounts
+  -> Seq Scan on account_events
+filter: event_type in ('login','checkout','refund') and occurred_at > now() - interval '30 days'
+note: support_dashboard_extra_joins adds repeated scans for every dashboard refresh.

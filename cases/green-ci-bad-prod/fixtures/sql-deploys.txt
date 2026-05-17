@@ -1,0 +1,5 @@
+service: web-gateway
+image_digest: sha256:8f4c92
+deployed_at: 2026-05-17T16:40:02Z
+ci_status: passed
+ci_smoke: GET /readyz -> 200
