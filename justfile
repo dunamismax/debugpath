@@ -18,4 +18,7 @@ build:
 validate-cases:
     cargo run -p xtask -- validate-cases cases
 
-gate: fmt-check check test build validate-cases
+release-smoke:
+    cargo run -p xtask -- release-smoke cases
+
+gate: fmt-check check test build validate-cases release-smoke

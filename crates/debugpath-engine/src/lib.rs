@@ -1,4 +1,5 @@
 use debugpath_content::{Case, FixKind};
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
 pub type Result<T> = std::result::Result<T, EngineError>;
@@ -17,7 +18,7 @@ pub enum EngineError {
     IncompleteDiagnosis,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub struct DiagnosisSubmission {
     pub root_cause: String,
     pub evidence: Vec<String>,
@@ -26,7 +27,7 @@ pub struct DiagnosisSubmission {
     pub blast_radius: String,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub enum ReplayEvent {
     CommandRun {
         command: String,
@@ -44,7 +45,7 @@ pub enum ReplayEvent {
     },
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub struct Score {
     pub total: u32,
     pub max_score: u32,

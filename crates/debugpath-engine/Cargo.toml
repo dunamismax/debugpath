@@ -5,4 +5,5 @@ edition = "2024"
 
 [dependencies]
 debugpath-content = { workspace = true }
+serde = { workspace = true }
 thiserror = { workspace = true }

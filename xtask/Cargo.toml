@@ -5,3 +5,8 @@ edition = "2024"
 
 [dependencies]
 debugpath-content = { workspace = true }
+debugpath-db = { path = "../crates/debugpath-db" }
+debugpath-engine = { workspace = true }
+debugpath-site = { path = "../crates/debugpath-site" }
+debugpath-ssh = { path = "../crates/debugpath-ssh" }
+debugpath-tui = { path = "../crates/debugpath-tui" }

@@ -136,7 +136,7 @@ MVP means the core game is usable end to end:
 - [x] Fix application is limited to authored options.
 - [x] Scoring covers correctness, time, hint cost, evidence quality, symptom
       masking, and command damage.
-- [ ] PostgreSQL stores users or anonymous handles, attempts, submissions,
+- [x] PostgreSQL stores users or anonymous handles, attempts, submissions,
       scores, replay events, unlocks, and published case state.
 - [ ] Public Axum/Leptos site shows live or seeded leaderboard, recent solves,
       featured incident, player profiles, replay viewer, authoring docs, and
@@ -206,7 +206,7 @@ Exit criteria: a local SSH session can play one complete case end to end.
 ### Phase 4 - Database And Site
 
 - [x] Add PostgreSQL schema and migrations.
-- [ ] Store attempts, submissions, scores, replay events, player handles, and
+- [x] Store attempts, submissions, scores, replay events, player handles, and
       published case metadata.
 - [ ] Build Axum + Leptos public site with:
       - SSH command as the primary action.
@@ -230,7 +230,7 @@ display a replay.
       and worker.
 - [ ] Add rate limiting, session limits, audit logs, and basic abuse controls.
 - [x] Add backup and restore notes for PostgreSQL.
-- [ ] Add release smoke checks for SSH, TUI, site, database migrations, and
+- [x] Add release smoke checks for SSH, TUI, site, database migrations, and
       replay rendering.
 
 Exit criteria: debugpath.dev is ready for a small public MVP.
