@@ -54,6 +54,28 @@ The MVP should be a deterministic simulation, not real containers. Shell,
 SQL, metrics, traces, logs, deploy diffs, runbooks, and packet snippets are
 fake but realistic artifacts served by a strict case engine.
 
+## Stack Direction
+
+- **Rust 2024** for every first-party binary and crate.
+- **Tokio** for async SSH, web, database, and worker behavior.
+- **russh** for the SSH server.
+- **ratatui** with `crossterm` for the primary terminal incident console.
+- **Axum + Leptos SSR** for the public website, replay, profiles,
+  leaderboards, and authoring surfaces.
+- **PostgreSQL + SQLx** for attempts, scores, submissions, replay events,
+  users, unlocks, authored drafts, and migrations.
+- **tracing** and `tracing-subscriber` for structured logs, session events,
+  and production diagnostics.
+- **tower** and **tower-http** for middleware, request tracing, compression,
+  headers, and static assets.
+- **clap** for any future local admin or case-authoring CLI.
+- **figment** or **config** only if environment, file, and profile settings
+  outgrow the current simple local configuration.
+- **Caddy + systemd + Ubuntu VM** for production.
+
+Do not add Dioxus, Tauri, egui, or iced unless debugpath grows a separate
+desktop/cross-platform client. The SSH/Ratatui surface is the primary app.
+
 ## Core Loop
 
 1. Player connects over SSH.
