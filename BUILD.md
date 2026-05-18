@@ -216,7 +216,7 @@ diagnosed, fixed, scored, and replayed without a UI.
 
 - [x] Implement local SSH server mode with safe development auth.
 - [x] Map SSH terminal IO into the Ratatui app.
-- [ ] Build the incident panes, command palette, notes, hints, diagnosis
+- [x] Build the incident panes, command palette, notes, hints, diagnosis
       form, fix selection, and results view.
 - [x] Keep host filesystem and host shell unavailable to players.
 - [x] Capture replay events from meaningful player actions.
@@ -230,8 +230,9 @@ the SSH channel, runs fixture-backed commands, rejects SSH `exec` and unknown
 host-shell-style commands, and has a russh client smoke test for PTY render,
 bad input, resize into the compact layout, disconnect cleanup, and a fixture
 command. Players can browse authored artifacts through core panes plus
-`artifacts` and `show <artifact>`. The remaining unchecked Phase 3 work is the
-full command palette and interactive diagnosis/fix/result views.
+`artifacts` and `show <artifact>`. The TUI now includes a command palette,
+session-local notes, authored hints, a field-by-field diagnosis form,
+authored fix selection, and a results view with score and replay summary.
 
 Exit criteria: a local SSH session can play one complete case end to end.
 

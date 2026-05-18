@@ -376,7 +376,19 @@ fn is_control_input(data: &[u8]) -> bool {
         && data.iter().all(|byte| {
             matches!(
                 byte,
-                b'\t' | b'\r' | b'\n' | 0x03 | 0x08 | 0x1b | b'[' | b'C' | b'D' | b'Z'
+                b'\t'
+                    | b'\r'
+                    | b'\n'
+                    | 0x03
+                    | 0x08
+                    | 0x10
+                    | 0x1b
+                    | b'['
+                    | b'A'
+                    | b'B'
+                    | b'C'
+                    | b'D'
+                    | b'Z'
             )
         })
 }
@@ -789,10 +801,28 @@ mod ssh_tests {
         assert!(accepted.contains("Fixture-backed command ran"));
 
         channel
+            .data(&b"\x10"[..])
+            .await
+            .expect("open command palette");
+        let palette = read_until(&mut channel, "Command Palette")
+            .await
+            .expect("palette output");
+        assert!(palette.contains("diagnosis form"));
+
+        channel
+            .data(&b"sql explain\r"[..])
+            .await
+            .expect("run palette action");
+        let palette_command = read_until(&mut channel, "Seq Scan")
+            .await
+            .expect("palette command output");
+        assert!(palette_command.contains("Fixture-backed command ran"));
+
+        channel
             .window_change(30, 8, 0, 0)
             .await
             .expect("resize accepted");
-        let compact = read_until(&mut channel, "Pane: Brief")
+        let compact = read_until(&mut channel, "Pane: SQL")
             .await
             .expect("compact resize output");
         assert!(compact.contains("debugpath.dev"));

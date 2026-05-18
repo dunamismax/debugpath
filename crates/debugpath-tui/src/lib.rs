@@ -1,5 +1,5 @@
 use debugpath_content::{Case, CommandKind};
-use debugpath_engine::{DiagnosisSubmission, EngineError, Session};
+use debugpath_engine::{DiagnosisSubmission, EngineError, ReplayEvent, Session};
 use ratatui::backend::Backend;
 use ratatui::layout::{Constraint, Layout};
 use ratatui::style::{Color, Modifier, Style};
@@ -37,10 +37,99 @@ impl AppOutcome {
 pub struct AppModel {
     session: Session,
     active_pane: usize,
+    mode: AppMode,
     command_line: String,
+    palette_query: String,
+    palette_selected: usize,
+    diagnosis_draft: DiagnosisDraft,
+    diagnosis_field: DiagnosisField,
+    fix_selected: usize,
     notes: Vec<String>,
     last_output: String,
     status: String,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum AppMode {
+    Command,
+    Palette,
+    Diagnosis,
+    FixSelect,
+    Results,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+struct DiagnosisDraft {
+    root_cause: String,
+    evidence: String,
+    affected_component: String,
+    proposed_fix: String,
+    blast_radius: String,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum DiagnosisField {
+    RootCause,
+    Evidence,
+    AffectedComponent,
+    ProposedFix,
+    BlastRadius,
+}
+
+impl DiagnosisField {
+    fn label(self) -> &'static str {
+        match self {
+            Self::RootCause => "Root cause",
+            Self::Evidence => "Evidence IDs",
+            Self::AffectedComponent => "Affected component",
+            Self::ProposedFix => "Proposed fix",
+            Self::BlastRadius => "Blast radius",
+        }
+    }
+
+    fn next(self) -> Self {
+        match self {
+            Self::RootCause => Self::Evidence,
+            Self::Evidence => Self::AffectedComponent,
+            Self::AffectedComponent => Self::ProposedFix,
+            Self::ProposedFix => Self::BlastRadius,
+            Self::BlastRadius => Self::BlastRadius,
+        }
+    }
+
+    fn previous(self) -> Self {
+        match self {
+            Self::RootCause => Self::RootCause,
+            Self::Evidence => Self::RootCause,
+            Self::AffectedComponent => Self::Evidence,
+            Self::ProposedFix => Self::AffectedComponent,
+            Self::BlastRadius => Self::ProposedFix,
+        }
+    }
+
+    fn is_last(self) -> bool {
+        self == Self::BlastRadius
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct PaletteAction {
+    label: String,
+    detail: String,
+    command: PaletteCommand,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+enum PaletteCommand {
+    RunCommand(String),
+    ShowArtifact(String),
+    UseHint(String),
+    OpenNotes,
+    OpenDiagnosis,
+    OpenFixes,
+    ShowResults,
+    ListCommands,
+    ListArtifacts,
 }
 
 impl AppModel {
@@ -49,7 +138,13 @@ impl AppModel {
         Self {
             session: Session::new(case),
             active_pane: 0,
+            mode: AppMode::Command,
             command_line: String::new(),
+            palette_query: String::new(),
+            palette_selected: 0,
+            diagnosis_draft: DiagnosisDraft::default(),
+            diagnosis_field: DiagnosisField::RootCause,
+            fix_selected: 0,
             notes: Vec::new(),
             last_output: "Type `commands` for fixtures or `artifacts` for browsable case files."
                 .to_owned(),
@@ -92,35 +187,24 @@ impl AppModel {
         let mut quit = false;
         while index < bytes.len() {
             match bytes[index] {
-                b'\t' => self.next_pane(),
-                b'\r' | b'\n' => self.submit_command_line(),
-                0x03 => quit = true,
-                0x08 | 0x7f => {
-                    self.command_line.pop();
-                }
-                b'q' if self.command_line.is_empty() => quit = true,
-                b'?' if self.command_line.is_empty() => self.use_hint(None),
                 0x1b => {
                     if bytes.get(index + 1) == Some(&b'[') {
                         match bytes.get(index + 2).copied() {
                             Some(b'C') => {
-                                self.next_pane();
+                                self.handle_escape_key(b'C');
                                 index += 2;
                             }
-                            Some(b'D') | Some(b'Z') => {
-                                self.previous_pane();
+                            Some(b'D') | Some(b'Z') | Some(b'A') | Some(b'B') => {
+                                self.handle_escape_key(bytes[index + 2]);
                                 index += 2;
                             }
-                            _ => self.command_line.clear(),
+                            _ => self.cancel_mode_or_clear(),
                         }
                     } else {
-                        self.command_line.clear();
+                        self.cancel_mode_or_clear();
                     }
                 }
-                byte if byte.is_ascii_graphic() || byte == b' ' => {
-                    self.command_line.push(byte as char);
-                }
-                _ => {}
+                byte => self.handle_plain_byte(byte, &mut quit),
             }
             index += 1;
         }
@@ -129,6 +213,151 @@ impl AppModel {
             AppOutcome::quit()
         } else {
             AppOutcome::redraw()
+        }
+    }
+
+    fn handle_plain_byte(&mut self, byte: u8, quit: &mut bool) {
+        match self.mode {
+            AppMode::Command => self.handle_command_byte(byte, quit),
+            AppMode::Palette => self.handle_palette_byte(byte, quit),
+            AppMode::Diagnosis => self.handle_diagnosis_byte(byte, quit),
+            AppMode::FixSelect => self.handle_fix_select_byte(byte, quit),
+            AppMode::Results => self.handle_results_byte(byte, quit),
+        }
+    }
+
+    fn handle_command_byte(&mut self, byte: u8, quit: &mut bool) {
+        match byte {
+            b'\t' => self.next_pane(),
+            b'\r' | b'\n' => self.submit_command_line(),
+            0x03 => *quit = true,
+            0x08 | 0x7f => {
+                self.command_line.pop();
+            }
+            0x10 => self.open_palette(),
+            b'q' if self.command_line.is_empty() => *quit = true,
+            b'?' if self.command_line.is_empty() => self.use_hint(None),
+            byte if byte.is_ascii_graphic() || byte == b' ' => {
+                self.command_line.push(byte as char);
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_palette_byte(&mut self, byte: u8, quit: &mut bool) {
+        match byte {
+            b'\t' => self.next_palette_action(),
+            b'\r' | b'\n' => self.accept_palette_action(),
+            0x03 => *quit = true,
+            0x08 | 0x7f => {
+                self.palette_query.pop();
+                self.palette_selected = 0;
+            }
+            byte if byte.is_ascii_graphic() || byte == b' ' => {
+                self.palette_query.push(byte as char);
+                self.palette_selected = 0;
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_diagnosis_byte(&mut self, byte: u8, quit: &mut bool) {
+        match byte {
+            b'\t' => self.advance_diagnosis_field(),
+            b'\r' | b'\n' => {
+                if self.diagnosis_field.is_last() {
+                    self.submit_diagnosis_form();
+                } else {
+                    self.advance_diagnosis_field();
+                }
+            }
+            0x03 => *quit = true,
+            0x08 | 0x7f => {
+                self.command_line.pop();
+            }
+            byte if byte.is_ascii_graphic() || byte == b' ' => {
+                self.command_line.push(byte as char);
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_fix_select_byte(&mut self, byte: u8, quit: &mut bool) {
+        match byte {
+            b'\t' => self.next_fix_option(),
+            b'\r' | b'\n' => self.apply_selected_fix(),
+            0x03 => *quit = true,
+            b'j' => self.next_fix_option(),
+            b'k' => self.previous_fix_option(),
+            byte if byte.is_ascii_digit() => {
+                let index = usize::from(byte - b'1');
+                if index < self.session.case().fixes.len() {
+                    self.fix_selected = index;
+                    self.apply_selected_fix();
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_results_byte(&mut self, byte: u8, quit: &mut bool) {
+        match byte {
+            b'\t' => self.next_pane(),
+            b'\r' | b'\n' => self.mode = AppMode::Command,
+            0x03 => *quit = true,
+            b'q' => *quit = true,
+            _ => {}
+        }
+    }
+
+    fn handle_escape_key(&mut self, key: u8) {
+        match self.mode {
+            AppMode::Command => match key {
+                b'C' | b'B' => self.next_pane(),
+                b'D' | b'A' | b'Z' => self.previous_pane(),
+                _ => self.command_line.clear(),
+            },
+            AppMode::Palette => match key {
+                b'C' | b'B' => self.next_palette_action(),
+                b'D' | b'A' | b'Z' => self.previous_palette_action(),
+                _ => self.cancel_mode_or_clear(),
+            },
+            AppMode::Diagnosis => match key {
+                b'C' | b'B' => self.advance_diagnosis_field(),
+                b'D' | b'A' | b'Z' => self.rewind_diagnosis_field(),
+                _ => self.cancel_mode_or_clear(),
+            },
+            AppMode::FixSelect => match key {
+                b'C' | b'B' => self.next_fix_option(),
+                b'D' | b'A' | b'Z' => self.previous_fix_option(),
+                _ => self.cancel_mode_or_clear(),
+            },
+            AppMode::Results => self.mode = AppMode::Command,
+        }
+    }
+
+    fn cancel_mode_or_clear(&mut self) {
+        match self.mode {
+            AppMode::Command => self.command_line.clear(),
+            AppMode::Palette => {
+                self.mode = AppMode::Command;
+                self.palette_query.clear();
+                self.palette_selected = 0;
+                self.status = "Command palette closed.".to_owned();
+            }
+            AppMode::Diagnosis => {
+                self.mode = AppMode::Command;
+                self.command_line.clear();
+                self.status = "Diagnosis form closed.".to_owned();
+            }
+            AppMode::FixSelect => {
+                self.mode = AppMode::Command;
+                self.status = "Fix selection closed.".to_owned();
+            }
+            AppMode::Results => {
+                self.mode = AppMode::Command;
+                self.status = "Results view closed.".to_owned();
+            }
         }
     }
 
@@ -143,6 +372,26 @@ impl AppModel {
     }
 
     pub fn execute(&mut self, input: &str) {
+        if input == "palette" {
+            self.open_palette();
+            return;
+        }
+
+        if input == "diagnosis" || input == "diagnose" {
+            self.open_diagnosis_form();
+            return;
+        }
+
+        if input == "fixes" || input == "fix" {
+            self.open_fix_selection();
+            return;
+        }
+
+        if input == "results" || input == "score" {
+            self.open_results_view();
+            return;
+        }
+
         if input == "commands" {
             self.last_output = self.command_catalog();
             self.status = "Listed fixture-backed commands.".to_owned();
@@ -206,7 +455,8 @@ impl AppModel {
                         score.root_cause_correct,
                         score.fix_solved
                     );
-                    self.status = "Fix applied and replay event captured.".to_owned();
+                    self.mode = AppMode::Results;
+                    self.status = "Fix applied; showing results.".to_owned();
                 }
                 Err(error) => self.show_engine_error(error),
             }
@@ -232,9 +482,29 @@ impl AppModel {
             return;
         }
 
+        let command_kind = self
+            .session
+            .case()
+            .commands
+            .iter()
+            .find(|command| command.command == input)
+            .map(|command| command.kind.clone());
+
         match self.session.run_command(input) {
             Ok(output) => {
                 self.last_output = output;
+                if let Some(kind) = command_kind {
+                    self.active_pane = match kind {
+                        CommandKind::Shell => CORE_PANES
+                            .iter()
+                            .position(|pane| *pane == "Shell")
+                            .unwrap_or(self.active_pane),
+                        CommandKind::Sql => CORE_PANES
+                            .iter()
+                            .position(|pane| *pane == "SQL")
+                            .unwrap_or(self.active_pane),
+                    };
+                }
                 self.status = "Fixture-backed command ran; replay event captured.".to_owned();
             }
             Err(error) => self.show_engine_error(error),
@@ -298,19 +568,22 @@ impl AppModel {
         );
 
         frame.render_widget(
-            Paragraph::new(self.active_content())
+            Paragraph::new(self.body_content())
                 .block(
                     Block::default()
                         .borders(Borders::ALL)
-                        .title(self.active_pane()),
+                        .title(self.body_title()),
                 )
                 .wrap(Wrap { trim: false }),
             body,
         );
 
         frame.render_widget(
-            Paragraph::new(self.command_line.as_str())
-                .block(Block::default().borders(Borders::ALL).title("Command")),
+            Paragraph::new(self.input_value()).block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(self.input_title()),
+            ),
             input,
         );
         frame.render_widget(Paragraph::new(self.status.as_str()), status);
@@ -346,6 +619,266 @@ impl AppModel {
         }
     }
 
+    fn open_palette(&mut self) {
+        self.mode = AppMode::Palette;
+        self.palette_query.clear();
+        self.palette_selected = 0;
+        self.status = "Command palette open.".to_owned();
+    }
+
+    fn open_diagnosis_form(&mut self) {
+        self.mode = AppMode::Diagnosis;
+        self.diagnosis_draft = DiagnosisDraft::default();
+        self.set_diagnosis_field(DiagnosisField::RootCause);
+        self.status = "Diagnosis form open.".to_owned();
+    }
+
+    fn open_fix_selection(&mut self) {
+        self.mode = AppMode::FixSelect;
+        self.fix_selected = self
+            .fix_selected
+            .min(self.session.case().fixes.len().saturating_sub(1));
+        self.command_line.clear();
+        self.status = "Fix selection open.".to_owned();
+    }
+
+    fn open_results_view(&mut self) {
+        self.mode = AppMode::Results;
+        self.command_line.clear();
+        self.last_output = self.results_content();
+        self.status = "Results view open.".to_owned();
+    }
+
+    fn next_palette_action(&mut self) {
+        let len = self.filtered_palette_actions().len();
+        if len > 0 {
+            self.palette_selected = (self.palette_selected + 1) % len;
+        }
+    }
+
+    fn previous_palette_action(&mut self) {
+        let len = self.filtered_palette_actions().len();
+        if len > 0 {
+            self.palette_selected = if self.palette_selected == 0 {
+                len - 1
+            } else {
+                self.palette_selected - 1
+            };
+        }
+    }
+
+    fn accept_palette_action(&mut self) {
+        let actions = self.filtered_palette_actions();
+        let Some(action) = actions.get(self.palette_selected.min(actions.len().saturating_sub(1)))
+        else {
+            self.status = "No palette action matches the query.".to_owned();
+            return;
+        };
+        let command = action.command.clone();
+        self.mode = AppMode::Command;
+        self.palette_query.clear();
+        self.palette_selected = 0;
+        match command {
+            PaletteCommand::RunCommand(command) => self.execute(&command),
+            PaletteCommand::ShowArtifact(path) => {
+                if let Some(output) = self.artifact_content(&path) {
+                    self.last_output = output;
+                    self.status = format!("Viewing artifact `{path}`.");
+                }
+            }
+            PaletteCommand::UseHint(hint_id) => self.use_hint(Some(&hint_id)),
+            PaletteCommand::OpenNotes => {
+                self.active_pane = CORE_PANES
+                    .iter()
+                    .position(|pane| *pane == "Notes")
+                    .unwrap_or(self.active_pane);
+                self.status = "Notes pane selected.".to_owned();
+            }
+            PaletteCommand::OpenDiagnosis => self.open_diagnosis_form(),
+            PaletteCommand::OpenFixes => self.open_fix_selection(),
+            PaletteCommand::ShowResults => self.open_results_view(),
+            PaletteCommand::ListCommands => {
+                self.last_output = self.command_catalog();
+                self.status = "Listed fixture-backed commands.".to_owned();
+            }
+            PaletteCommand::ListArtifacts => {
+                self.last_output = self.artifact_catalog();
+                self.status = "Listed browsable case artifacts.".to_owned();
+            }
+        }
+    }
+
+    fn palette_actions(&self) -> Vec<PaletteAction> {
+        let mut actions = vec![
+            PaletteAction {
+                label: "diagnosis form".to_owned(),
+                detail: "submit root cause, evidence, component, fix, and blast radius".to_owned(),
+                command: PaletteCommand::OpenDiagnosis,
+            },
+            PaletteAction {
+                label: "fix selection".to_owned(),
+                detail: "choose an authored fix option".to_owned(),
+                command: PaletteCommand::OpenFixes,
+            },
+            PaletteAction {
+                label: "results view".to_owned(),
+                detail: "show score and replay events".to_owned(),
+                command: PaletteCommand::ShowResults,
+            },
+            PaletteAction {
+                label: "notes pane".to_owned(),
+                detail: "review session-local notes".to_owned(),
+                command: PaletteCommand::OpenNotes,
+            },
+            PaletteAction {
+                label: "list commands".to_owned(),
+                detail: "show fixture-backed shell and SQL commands".to_owned(),
+                command: PaletteCommand::ListCommands,
+            },
+            PaletteAction {
+                label: "list artifacts".to_owned(),
+                detail: "show browsable case artifacts".to_owned(),
+                command: PaletteCommand::ListArtifacts,
+            },
+        ];
+
+        actions.extend(
+            self.session
+                .case()
+                .commands
+                .iter()
+                .map(|command| PaletteAction {
+                    label: format!("run: {}", command.command),
+                    detail: format!("{:?} fixture", command.kind),
+                    command: PaletteCommand::RunCommand(command.command.clone()),
+                }),
+        );
+        actions.extend(self.artifact_paths().into_iter().map(|path| PaletteAction {
+            label: format!("artifact: {path}"),
+            detail: "open case artifact".to_owned(),
+            command: PaletteCommand::ShowArtifact(path),
+        }));
+        actions.extend(self.session.case().hints.iter().map(|hint| PaletteAction {
+            label: format!("hint: {}", hint.id),
+            detail: format!("cost {}", hint.cost),
+            command: PaletteCommand::UseHint(hint.id.clone()),
+        }));
+        actions
+    }
+
+    fn filtered_palette_actions(&self) -> Vec<PaletteAction> {
+        let query = self.palette_query.trim().to_lowercase();
+        self.palette_actions()
+            .into_iter()
+            .filter(|action| {
+                query.is_empty()
+                    || action.label.to_lowercase().contains(&query)
+                    || action.detail.to_lowercase().contains(&query)
+            })
+            .collect()
+    }
+
+    fn advance_diagnosis_field(&mut self) {
+        self.commit_diagnosis_field();
+        self.set_diagnosis_field(self.diagnosis_field.next());
+    }
+
+    fn rewind_diagnosis_field(&mut self) {
+        self.commit_diagnosis_field();
+        self.set_diagnosis_field(self.diagnosis_field.previous());
+    }
+
+    fn set_diagnosis_field(&mut self, field: DiagnosisField) {
+        self.diagnosis_field = field;
+        self.command_line = self.diagnosis_value(field).to_owned();
+    }
+
+    fn commit_diagnosis_field(&mut self) {
+        let value = self.command_line.trim().to_owned();
+        match self.diagnosis_field {
+            DiagnosisField::RootCause => self.diagnosis_draft.root_cause = value,
+            DiagnosisField::Evidence => self.diagnosis_draft.evidence = value,
+            DiagnosisField::AffectedComponent => self.diagnosis_draft.affected_component = value,
+            DiagnosisField::ProposedFix => self.diagnosis_draft.proposed_fix = value,
+            DiagnosisField::BlastRadius => self.diagnosis_draft.blast_radius = value,
+        }
+    }
+
+    fn diagnosis_value(&self, field: DiagnosisField) -> &str {
+        match field {
+            DiagnosisField::RootCause => &self.diagnosis_draft.root_cause,
+            DiagnosisField::Evidence => &self.diagnosis_draft.evidence,
+            DiagnosisField::AffectedComponent => &self.diagnosis_draft.affected_component,
+            DiagnosisField::ProposedFix => &self.diagnosis_draft.proposed_fix,
+            DiagnosisField::BlastRadius => &self.diagnosis_draft.blast_radius,
+        }
+    }
+
+    fn submit_diagnosis_form(&mut self) {
+        self.commit_diagnosis_field();
+        let diagnosis = DiagnosisSubmission {
+            root_cause: self.diagnosis_draft.root_cause.trim().to_owned(),
+            evidence: self
+                .diagnosis_draft
+                .evidence
+                .split(',')
+                .map(str::trim)
+                .filter(|item| !item.is_empty())
+                .map(str::to_owned)
+                .collect(),
+            affected_component: self.diagnosis_draft.affected_component.trim().to_owned(),
+            proposed_fix: self.diagnosis_draft.proposed_fix.trim().to_owned(),
+            blast_radius: self.diagnosis_draft.blast_radius.trim().to_owned(),
+        };
+
+        match self.session.submit_diagnosis(diagnosis) {
+            Ok(()) => {
+                self.last_output = "Diagnosis submitted. Choose a fix option next.".to_owned();
+                self.status = "Diagnosis replay event captured.".to_owned();
+                self.open_fix_selection();
+            }
+            Err(error) => {
+                self.mode = AppMode::Diagnosis;
+                self.show_engine_error(error);
+            }
+        }
+    }
+
+    fn next_fix_option(&mut self) {
+        let len = self.session.case().fixes.len();
+        if len > 0 {
+            self.fix_selected = (self.fix_selected + 1) % len;
+        }
+    }
+
+    fn previous_fix_option(&mut self) {
+        let len = self.session.case().fixes.len();
+        if len > 0 {
+            self.fix_selected = if self.fix_selected == 0 {
+                len - 1
+            } else {
+                self.fix_selected - 1
+            };
+        }
+    }
+
+    fn apply_selected_fix(&mut self) {
+        let Some(fix) = self.session.case().fixes.get(self.fix_selected) else {
+            self.last_output = "This case has no authored fixes.".to_owned();
+            self.status = "No fix available.".to_owned();
+            return;
+        };
+        let fix_id = fix.id.clone();
+        match self.session.apply_fix(&fix_id) {
+            Ok(()) => {
+                self.last_output = self.results_content();
+                self.mode = AppMode::Results;
+                self.status = format!("Applied fix `{fix_id}`; results ready.");
+            }
+            Err(error) => self.show_engine_error(error),
+        }
+    }
+
     fn show_engine_error(&mut self, error: EngineError) {
         self.last_output = match &error {
             EngineError::UnknownCommand(command) => format!(
@@ -354,6 +887,45 @@ impl AppModel {
             _ => error.to_string(),
         };
         self.status = error.to_string();
+    }
+
+    fn body_title(&self) -> String {
+        match self.mode {
+            AppMode::Command => self.active_pane().to_owned(),
+            AppMode::Palette => "Command Palette".to_owned(),
+            AppMode::Diagnosis => "Diagnosis Form".to_owned(),
+            AppMode::FixSelect => "Fix Selection".to_owned(),
+            AppMode::Results => "Results".to_owned(),
+        }
+    }
+
+    fn body_content(&self) -> Text<'_> {
+        match self.mode {
+            AppMode::Command => self.active_content(),
+            AppMode::Palette => Text::from(self.palette_content()),
+            AppMode::Diagnosis => Text::from(self.diagnosis_content()),
+            AppMode::FixSelect => Text::from(self.fix_selection_content()),
+            AppMode::Results => Text::from(self.results_content()),
+        }
+    }
+
+    fn input_title(&self) -> String {
+        match self.mode {
+            AppMode::Command => "Command".to_owned(),
+            AppMode::Palette => "Palette Query".to_owned(),
+            AppMode::Diagnosis => self.diagnosis_field.label().to_owned(),
+            AppMode::FixSelect => "Fix".to_owned(),
+            AppMode::Results => "Results".to_owned(),
+        }
+    }
+
+    fn input_value(&self) -> &str {
+        match self.mode {
+            AppMode::Palette => self.palette_query.as_str(),
+            AppMode::FixSelect => "Use arrows/j/k or 1-9, then enter.",
+            AppMode::Results => "Enter returns to the console. q disconnects.",
+            _ => self.command_line.as_str(),
+        }
     }
 
     fn active_content(&self) -> Text<'_> {
@@ -368,6 +940,102 @@ impl AppModel {
             "Notes" => Text::from(self.notes_content()),
             _ => Text::from("unknown pane"),
         }
+    }
+
+    fn palette_content(&self) -> String {
+        let actions = self.filtered_palette_actions();
+        if actions.is_empty() {
+            return "No matching actions.".to_owned();
+        }
+        let selected = self.palette_selected.min(actions.len().saturating_sub(1));
+        let mut lines = vec![
+            "Enter runs the selected action. Tab or arrows change selection. Esc closes."
+                .to_owned(),
+            String::new(),
+        ];
+        lines.extend(actions.iter().enumerate().map(|(index, action)| {
+            let marker = if index == selected { ">" } else { " " };
+            format!("{marker} {} - {}", action.label, action.detail)
+        }));
+        lines.join("\n")
+    }
+
+    fn diagnosis_content(&self) -> String {
+        let fields = [
+            DiagnosisField::RootCause,
+            DiagnosisField::Evidence,
+            DiagnosisField::AffectedComponent,
+            DiagnosisField::ProposedFix,
+            DiagnosisField::BlastRadius,
+        ];
+        let mut lines = vec![
+            "Fill each field and press Enter. Evidence IDs are comma-separated. Esc closes."
+                .to_owned(),
+            String::new(),
+        ];
+        lines.extend(fields.into_iter().map(|field| {
+            let marker = if field == self.diagnosis_field {
+                ">"
+            } else {
+                " "
+            };
+            let value = if field == self.diagnosis_field {
+                self.command_line.as_str()
+            } else {
+                self.diagnosis_value(field)
+            };
+            let shown = if value.is_empty() { "<empty>" } else { value };
+            format!("{marker} {}: {shown}", field.label())
+        }));
+        lines.join("\n")
+    }
+
+    fn fix_selection_content(&self) -> String {
+        let fixes = &self.session.case().fixes;
+        if fixes.is_empty() {
+            return "This case has no authored fixes.".to_owned();
+        }
+        let mut lines = vec!["Choose one authored fix option.".to_owned(), String::new()];
+        lines.extend(fixes.iter().enumerate().map(|(index, fix)| {
+            let marker = if index == self.fix_selected { ">" } else { " " };
+            format!(
+                "{marker} {}. {} ({:?})\n   id: {}\n   {}",
+                index + 1,
+                fix.title,
+                fix.kind,
+                fix.id,
+                fix.explanation
+            )
+        }));
+        lines.join("\n")
+    }
+
+    fn results_content(&self) -> String {
+        let score = self.session.score();
+        let replay = self
+            .session
+            .replay()
+            .iter()
+            .enumerate()
+            .map(|(index, event)| format!("{}. {}", index + 1, replay_event_summary(event)))
+            .collect::<Vec<_>>()
+            .join("\n");
+        format!(
+            "Score: {}/{}\nRoot cause correct: {}\nFix solved: {}\nRequired evidence found: {}\nDamage penalty: {}\nHint penalty: {}\nTime penalty: {}\n\nReplay:\n{}",
+            score.total,
+            score.max_score,
+            score.root_cause_correct,
+            score.fix_solved,
+            score.evidence_found,
+            score.damage_penalty,
+            score.hint_penalty,
+            score.time_penalty,
+            if replay.is_empty() {
+                "No replay events yet.".to_owned()
+            } else {
+                replay
+            }
+        )
     }
 
     fn systems_content(&self) -> String {
@@ -407,11 +1075,11 @@ impl AppModel {
             .collect::<Vec<_>>()
             .join("\n\n");
         format!(
-            "{}\n\nSchema:\n{}\n\nRows:\n{}\n\nLast output:\n{}",
+            "{}\n\nLast output:\n{}\n\nSchema:\n{}\n\nRows:\n{}",
             self.command_catalog_for(CommandKind::Sql),
+            self.last_output,
             case.artifacts.schema_sql,
-            rows,
-            self.last_output
+            rows
         )
     }
 
@@ -457,29 +1125,28 @@ impl AppModel {
     }
 
     fn artifact_catalog(&self) -> String {
-        let case = self.session.case();
-        let mut lines = vec![
-            "Browsable artifacts:".to_owned(),
-            "- brief".to_owned(),
-            "- logs".to_owned(),
-            "- metrics".to_owned(),
-            "- schema.sql".to_owned(),
-            "- traces".to_owned(),
-        ];
+        let mut lines = vec!["Browsable artifacts:".to_owned()];
         lines.extend(
-            case.artifacts
-                .sql_rows
-                .keys()
-                .map(|path| format!("- {path}")),
-        );
-        lines.extend(case.artifacts.diffs.keys().map(|path| format!("- {path}")));
-        lines.extend(
-            case.artifacts
-                .runbooks
-                .keys()
+            self.artifact_paths()
+                .into_iter()
                 .map(|path| format!("- {path}")),
         );
         lines.join("\n")
+    }
+
+    fn artifact_paths(&self) -> Vec<String> {
+        let case = self.session.case();
+        let mut paths = vec![
+            "brief".to_owned(),
+            "logs".to_owned(),
+            "metrics".to_owned(),
+            "schema.sql".to_owned(),
+            "traces".to_owned(),
+        ];
+        paths.extend(case.artifacts.sql_rows.keys().cloned());
+        paths.extend(case.artifacts.diffs.keys().cloned());
+        paths.extend(case.artifacts.runbooks.keys().cloned());
+        paths
     }
 
     fn artifact_content(&self, path: &str) -> Option<String> {
@@ -534,6 +1201,27 @@ fn metrics_content(case: &Case) -> String {
 fn trace_content(case: &Case) -> String {
     serde_json::to_string_pretty(&case.artifacts.traces)
         .unwrap_or_else(|_| case.artifacts.traces.to_string())
+}
+
+fn replay_event_summary(event: &ReplayEvent) -> String {
+    match event {
+        ReplayEvent::CommandRun {
+            command,
+            evidence,
+            damage,
+        } => format!(
+            "command `{command}` evidence=[{}] damage={damage}",
+            evidence.join(",")
+        ),
+        ReplayEvent::CommandRejected { command, reason } => {
+            format!("rejected `{command}`: {reason}")
+        }
+        ReplayEvent::HintUsed { hint_id, cost } => format!("hint `{hint_id}` cost={cost}"),
+        ReplayEvent::DiagnosisSubmitted => "diagnosis submitted".to_owned(),
+        ReplayEvent::FixApplied { fix_id, solves } => {
+            format!("fix `{fix_id}` applied solves={solves}")
+        }
+    }
 }
 
 fn parse_diagnosis(raw: &str) -> Option<DiagnosisSubmission> {
@@ -691,6 +1379,52 @@ mod tests {
         assert_eq!(first.session().replay().len(), 1);
         assert!(second.session().replay().is_empty());
         assert!(!second.notes_content().contains("first connection only"));
+    }
+
+    #[test]
+    fn command_palette_runs_commands_and_opens_artifacts() {
+        let mut model = AppModel::new(fixture_case());
+
+        model.handle_bytes(&[0x10]);
+        assert_eq!(model.mode, AppMode::Palette);
+        model.handle_bytes(b"logs checkout\r");
+        assert_eq!(model.mode, AppMode::Command);
+        assert!(model.last_output().contains("checkout-api"));
+
+        model.handle_bytes(&[0x10]);
+        model.handle_bytes(b"query-shape\r");
+        assert_eq!(model.mode, AppMode::Command);
+        assert!(model.last_output().contains("orders"));
+    }
+
+    #[test]
+    fn interactive_diagnosis_fix_and_results_flow_scores_case() {
+        let mut model = AppModel::new(fixture_case());
+        model.execute("logs checkout-api --since 10m");
+        model.execute("sql explain checkout_recent_orders");
+        model.execute("diff deploy checkout-api");
+
+        model.execute("diagnosis");
+        assert_eq!(model.mode, AppMode::Diagnosis);
+        model.handle_bytes(
+            b"missing composite index after query shape change\r\
+              checkout-timeouts-after-deploy,seq-scan-orders,query-shape-changed\r\
+              checkout-api orders query\r\
+              add_orders_status_created_at_index\r\
+              checkout order confirmation reads for pending orders\r",
+        );
+        assert_eq!(model.mode, AppMode::FixSelect);
+
+        model.handle_bytes(b"\r");
+        assert_eq!(model.mode, AppMode::Results);
+        let score = model.session().score();
+        assert!(score.root_cause_correct);
+        assert!(score.fix_solved);
+
+        let view = model.render_to_string(96, 28).expect("renders results");
+        assert!(view.contains("Results"));
+        assert!(view.contains("Score:"));
+        assert!(view.contains("diagnosis submitted"));
     }
 
     #[test]
