@@ -344,24 +344,27 @@ async fn case_detail(
     Ok(Html(page(
         &case.title,
         &format!(
-            r#"<section aria-label="case detail">
+            r#"<section aria-label="case detail" class="page-band detail-layout">
   <p class="backlink"><a href="/cases">Case catalog</a></p>
-  <h1>{}</h1>
-  <p class="lede">{}</p>
-  <dl class="metadata">
+  <div>
+    <p class="kicker">Incident packet</p>
+    <h1>{}</h1>
+    <p class="lede">{}</p>
+    <div class="action-row">
+      <a class="primary-action" href="/#ssh-entrypoint">SSH in now</a>
+      <a class="secondary-action" href="/replays">Watch a replay</a>
+    </div>
+  </div>
+  <dl class="metadata rail">
     <div><dt>Difficulty</dt><dd>{}</dd></div>
     <div><dt>Component</dt><dd>{}</dd></div>
   </dl>
-  <dl class="metric-row" aria-label="case investigation surface">
+  <dl class="metric-row span-all" aria-label="case investigation surface">
     <div><dt>Commands</dt><dd>{}</dd></div>
     <div><dt>Evidence IDs</dt><dd>{}</dd></div>
     <div><dt>Hints</dt><dd>{}</dd></div>
     <div><dt>False trails</dt><dd>{}</dd></div>
   </dl>
-  <div class="action-row">
-    <a class="primary-action" href="/">SSH in now</a>
-    <a href="/standards">Review case standards</a>
-  </div>
 </section>"#,
             escape_html(&case.title),
             escape_html(&case.summary),
@@ -398,17 +401,18 @@ async fn player_profile(
     Ok(Html(page(
         &player.display_name,
         &format!(
-            r#"<section aria-label="player profile">
+            r#"<section aria-label="player profile" class="page-band">
+  <p class="kicker">Player profile</p>
   <h1>{}</h1>
-  <p><code>@{}</code></p>
+  <p class="lede"><code>@{}</code> has public seeded activity for leaderboard, replay, and case-solve surfaces.</p>
   <dl class="metric-row">
     <div><dt>Solved cases</dt><dd>{}</dd></div>
     <div><dt>Best score</dt><dd>{}</dd></div>
     <div><dt>Recent case</dt><dd>{}</dd></div>
   </dl>
   <div class="action-row">
-    <a href="/leaderboard">Leaderboard</a>
-    <a href="/replays">Replay viewer</a>
+    <a class="secondary-action" href="/leaderboard">Leaderboard</a>
+    <a class="secondary-action" href="/replays">Replay viewer</a>
   </div>
 </section>"#,
             escape_html(&player.display_name),
@@ -436,8 +440,9 @@ async fn replay_detail(
     Ok(Html(page(
         "Replay",
         &format!(
-            r#"<section aria-label="replay summary">
+            r#"<section aria-label="replay summary" class="page-band">
   <p class="backlink"><a href="/replays">Replay index</a></p>
+  <p class="kicker">Replay detail</p>
   <h1>Replay</h1>
   <p class="lede"><a href="/players/{player}">@{player}</a> solved <a href="/cases/{case_slug}">{case_slug}</a>.</p>
   {}
@@ -452,10 +457,13 @@ async fn replay_detail(
 async fn authoring_docs() -> Html<String> {
     Html(page(
         "Authoring Docs",
-        r#"<section aria-label="authoring docs">
+        r#"<section aria-label="authoring docs" class="page-band prose-grid">
+  <div>
+  <p class="kicker">Case production</p>
   <h1>Authoring Docs</h1>
   <p>Cases are Git-authored incidents with deterministic artifacts, constrained commands, diagnosis expectations, fix options, hints, false trails, and scoring rules.</p>
-  <ol>
+  </div>
+  <ol class="checklist">
     <li>Write the brief and realistic artifacts.</li>
     <li>Author command fixtures that never execute on the host.</li>
     <li>Link evidence to diagnosis and scoring.</li>
@@ -468,9 +476,13 @@ async fn authoring_docs() -> Html<String> {
 async fn case_standards() -> Html<String> {
     Html(page(
         "Case Quality Standards",
-        r#"<section aria-label="case quality standards">
+        r#"<section aria-label="case quality standards" class="page-band prose-grid">
+  <div>
+  <p class="kicker">Review bar</p>
   <h1>Case Quality Standards</h1>
-  <ul>
+  <p class="lede">The web surface should make case quality inspectable before a player connects over SSH.</p>
+  </div>
+  <ul class="checklist">
     <li>Every answer must be discoverable from evidence inside the case.</li>
     <li>Every case needs at least one fair false trail.</li>
     <li>Logs, metrics, SQL rows, traces, diffs, and runbooks must be coherent.</li>
@@ -529,34 +541,57 @@ pub fn render_home(data: &SiteData) -> String {
     let replay_count = data.replays.len();
     render_page("debugpath.dev", move || {
         let featured_href = format!("/cases/{}", featured.slug);
+        let featured_cta_href = featured_href.clone();
         view! {
             <section aria-label="hero" class="hero">
                 <div class="hero-copy">
-                    <p class="kicker">"Terminal incident lab"</p>
+                    <p class="kicker">"SSH-native incident lab"</p>
                     <h1>"debugpath.dev"</h1>
-                    <p class="entrypoint"><code>{ssh_entrypoint}</code></p>
                     <p class="lede">
                         "Solve production incidents from the terminal. Read logs, query fixtures, inspect traces, chase false leads, and prove the root cause."
                     </p>
+                    <div id="ssh-entrypoint" class="command-strip" aria-label="ssh entrypoint">
+                        <span>"$"</span>
+                        <code>{ssh_entrypoint.clone()}</code>
+                    </div>
                     <div class="action-row">
-                        <a class="primary-action" href="/cases">"Open case catalog"</a>
-                        <a href="/replays">"Watch a replay"</a>
+                        <a class="primary-action" href="#ssh-entrypoint">"SSH in now"</a>
+                        <a class="secondary-action" href="/cases">"Open case catalog"</a>
+                        <a class="secondary-action" href="/replays">"Watch a replay"</a>
                     </div>
                 </div>
-                <div class="ops-snapshot" aria-label="site snapshot">
-                    <span>"cases online" <strong>{case_count}</strong></span>
-                    <span>"seeded solves" <strong>{solve_count}</strong></span>
-                    <span>"public replays" <strong>{replay_count}</strong></span>
+                <div class="terminal-panel" aria-label="incident console preview">
+                    <div class="terminal-toolbar">
+                        <span>"debugpath session"</span>
+                        <strong>"live fixture"</strong>
+                    </div>
+                    <pre>"Brief   Systems   Logs   Metrics   Shell   SQL   Trace   Notes
+case: slow-checkout        status: investigating
+logs checkout-api --since 10m
+  WARN p95=4.2s deploy=checkout-query-shape
+sql explain checkout_recent_orders
+  Seq Scan on orders  rows=1.2M
+diagnosis: missing composite index"</pre>
                 </div>
             </section>
-            <section aria-label="featured incident" class="band">
-                <p class="kicker">"Featured incident"</p>
-                <h2><a href=featured_href>{featured.title}</a></h2>
-                <p>{featured.summary}</p>
-                <dl class="metadata">
-                    <div><dt>"Difficulty"</dt><dd>{featured.difficulty}</dd></div>
-                    <div><dt>"Component"</dt><dd>{featured.component}</dd></div>
-                </dl>
+            <dl class="ops-snapshot" aria-label="site snapshot">
+                <div><dt>"Cases online"</dt><dd>{case_count}</dd></div>
+                <div><dt>"Seeded solves"</dt><dd>{solve_count}</dd></div>
+                <div><dt>"Public replays"</dt><dd>{replay_count}</dd></div>
+            </dl>
+            <section aria-label="featured incident" class="page-band feature-grid">
+                <div>
+                    <p class="kicker">"Featured incident"</p>
+                    <h2><a href=featured_href>{featured.title}</a></h2>
+                    <p>{featured.summary}</p>
+                    <dl class="metadata">
+                        <div><dt>"Difficulty"</dt><dd>{featured.difficulty}</dd></div>
+                        <div><dt>"Component"</dt><dd>{featured.component}</dd></div>
+                    </dl>
+                    <div class="action-row">
+                        <a class="secondary-action" href=featured_cta_href>"Open incident packet"</a>
+                    </div>
+                </div>
                 <dl class="metric-row" aria-label="featured investigation surface">
                     <div><dt>"Commands"</dt><dd>{featured.command_count}</dd></div>
                     <div><dt>"Evidence IDs"</dt><dd>{featured.evidence_count}</dd></div>
@@ -583,9 +618,10 @@ pub fn render_case_catalog(cases: &[CaseSummary]) -> String {
     let cases = cases.to_vec();
     render_page("Case Catalog", move || {
         view! {
-            <section aria-label="case catalog" class="band">
+            <section aria-label="case catalog" class="page-band">
                 <p class="kicker">"Playable incidents"</p>
                 <h1>"Case Catalog"</h1>
+                <p class="lede">"Each incident is a deterministic case with fixture-backed commands, evidence IDs, scored fixes, and fair false trails."</p>
                 <ul class="case-grid">
                     {cases
                         .into_iter()
@@ -593,8 +629,10 @@ pub fn render_case_catalog(cases: &[CaseSummary]) -> String {
                             let href = format!("/cases/{}", case.slug);
                             view! {
                                 <li>
-                                    <a href=href>{case.title}</a>
-                                    <span>{case.difficulty}</span>
+                                    <div class="case-card-head">
+                                        <a href=href>{case.title}</a>
+                                        <span>{case.difficulty}</span>
+                                    </div>
                                     <p>{case.summary}</p>
                                     <small>{case.component}</small>
                                     <dl class="mini-metrics">
@@ -616,7 +654,7 @@ pub fn render_replay_index(replays: &[Replay]) -> String {
     let replays = replays.to_vec();
     render_page("Replays", move || {
         view! {
-            <section aria-label="replay index" class="band">
+            <section aria-label="replay index" class="page-band">
                 <p class="kicker">"Inspect process"</p>
                 <h1>"Replay Viewer"</h1>
                 <p class="lede">
@@ -632,10 +670,12 @@ pub fn render_replay_index(replays: &[Replay]) -> String {
                             let case_href = format!("/cases/{}", replay.case_slug);
                             view! {
                                 <li>
-                                    <a href=href>{replay.id}</a>
+                                    <div>
+                                        <a href=href>{replay.id}</a>
+                                        <span>{format!("{} events", replay.events.len())}</span>
+                                    </div>
                                     <a href=player_href>{player_label}</a>
                                     <a href=case_href>{replay.case_slug}</a>
-                                    <strong>{format!("{} events", replay.events.len())}</strong>
                                 </li>
                             }
                         })
@@ -655,7 +695,7 @@ pub fn render_status(data: &SiteData) -> String {
     let ssh_entrypoint = data.ssh_entrypoint.clone();
     render_page("Status", move || {
         view! {
-            <section aria-label="status" class="band">
+            <section aria-label="status" class="page-band">
                 <p class="kicker">"Operational status"</p>
                 <h1>"Status"</h1>
                 <dl class="metric-row">
@@ -692,10 +732,11 @@ fn recent_solves_section(solves: &[RecentSolve]) -> String {
 
 fn leaderboard_section_view(entries: Vec<LeaderboardEntry>) -> impl IntoView {
     view! {
-        <section aria-label="leaderboard" class="band">
+        <section aria-label="leaderboard" class="page-band">
             <div class="section-heading">
                 <p class="kicker">"Seeded score table"</p>
                 <h2>"Leaderboard"</h2>
+                <a class="section-link" href="/leaderboard">"Full table"</a>
             </div>
             <div class="table-wrap">
                 <table>
@@ -717,10 +758,10 @@ fn leaderboard_section_view(entries: Vec<LeaderboardEntry>) -> impl IntoView {
                                 let player_label = format!("@{}", entry.player_handle);
                                 view! {
                                     <tr>
-                                        <td>{entry.rank}</td>
+                                        <td><span class="rank-pill">{entry.rank}</span></td>
                                         <td><a href=player_href>{player_label}</a></td>
                                         <td><a href=case_href>{entry.case_slug}</a></td>
-                                        <td>{entry.score}</td>
+                                        <td><strong>{entry.score}</strong></td>
                                         <td>{entry.solved_at}</td>
                                     </tr>
                                 }
@@ -735,10 +776,11 @@ fn leaderboard_section_view(entries: Vec<LeaderboardEntry>) -> impl IntoView {
 
 fn recent_solves_section_view(solves: Vec<RecentSolve>) -> impl IntoView {
     view! {
-        <section aria-label="recent solves" class="band">
+        <section aria-label="recent solves" class="page-band">
             <div class="section-heading">
                 <p class="kicker">"Latest completions"</p>
                 <h2>"Recent solves"</h2>
+                <a class="section-link" href="/solves">"All solves"</a>
             </div>
             <ul class="activity-list">
                 {solves
@@ -749,9 +791,11 @@ fn recent_solves_section_view(solves: Vec<RecentSolve>) -> impl IntoView {
                         let case_href = format!("/cases/{}", solve.case_slug);
                         view! {
                             <li>
-                                <a href=player_href>{player_label}</a>
-                                <span>"solved"</span>
-                                <a href=case_href>{solve.case_title}</a>
+                                <div>
+                                    <a href=player_href>{player_label}</a>
+                                    <span>"solved"</span>
+                                    <a href=case_href>{solve.case_title}</a>
+                                </div>
                                 <strong>{solve.score}</strong>
                                 <time>{solve.solved_at}</time>
                             </li>
@@ -843,63 +887,99 @@ fn page(title: &str, body: &str) -> String {
   <style>
     :root {{
       color-scheme: light dark;
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       line-height: 1.5;
       font-size: 16px;
+      --ink: #17202a;
+      --muted: #536170;
+      --surface: #ffffff;
+      --surface-2: #eef3f6;
+      --line: #d5dee6;
+      --accent: #006b74;
+      --accent-strong: #064e54;
+      --warn: #9a5b00;
+      --terminal: #101820;
+      --terminal-line: #263542;
+    }}
+    * {{
+      box-sizing: border-box;
     }}
     body {{
       margin: 0;
-      color: #17202a;
-      background: #f4f7f9;
+      color: var(--ink);
+      background: var(--surface-2);
     }}
     .skip-link {{
       position: absolute;
       left: 12px;
       top: -48px;
       padding: 8px 10px;
-      background: #ffffff;
-      border: 1px solid #17202a;
+      color: var(--ink);
+      background: var(--surface);
+      border: 1px solid var(--ink);
       z-index: 2;
     }}
     .skip-link:focus {{
       top: 12px;
     }}
     .site-header,
-    .site-footer {{
+    .site-footer,
+    main {{
       width: min(1180px, calc(100vw - 32px));
       margin: 0 auto;
     }}
     .site-header {{
+      position: sticky;
+      top: 0;
+      z-index: 1;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 20px;
-      padding: 16px 0;
-      border-bottom: 1px solid #d8dee6;
+      gap: 18px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--surface-2) 92%, transparent);
+      backdrop-filter: blur(10px);
     }}
     .site-header nav,
-    .site-footer {{
+    .site-footer,
+    .action-row,
+    .metadata,
+    .section-nav {{
       display: flex;
       flex-wrap: wrap;
-      gap: 10px 18px;
+      align-items: center;
+      gap: 10px 16px;
     }}
     .brand {{
-      color: #17202a;
-      font-weight: 800;
+      color: var(--ink);
+      font-size: 1rem;
+      font-weight: 850;
       text-decoration: none;
+    }}
+    .site-header nav a,
+    .section-nav a,
+    .secondary-action,
+    .section-link {{
+      color: var(--accent-strong);
+      text-decoration: none;
+    }}
+    .site-header nav a:hover,
+    .section-nav a:hover,
+    .secondary-action:hover,
+    .section-link:hover {{
+      text-decoration: underline;
     }}
     .site-footer {{
       justify-content: space-between;
-      padding: 20px 0 32px;
-      border-top: 1px solid #d8dee6;
-      color: #536170;
+      padding: 20px 0 34px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
     }}
     main {{
-      width: min(1180px, calc(100vw - 32px));
-      margin: 0 auto;
-      padding: 32px 0 48px;
+      padding: 28px 0 48px;
     }}
-    h1, h2, p {{
+    h1, h2, p, a, code, td, dd {{
       overflow-wrap: anywhere;
     }}
     h1, h2 {{
@@ -911,94 +991,200 @@ fn page(title: &str, body: &str) -> String {
       line-height: 1;
     }}
     h2 {{
-      font-size: 1.35rem;
+      font-size: 1.45rem;
+      line-height: 1.15;
+    }}
+    p {{
+      margin: 0 0 12px;
     }}
     .lede {{
       max-width: 76ch;
-      font-size: 1.06rem;
+      color: #2b3b48;
+      font-size: 1.05rem;
     }}
     section, nav {{
-      padding: 24px 0;
-      border-bottom: 1px solid #d8dee6;
+      border-bottom: 1px solid var(--line);
     }}
     a {{
-      color: #006b74;
-      font-weight: 650;
+      color: var(--accent);
+      font-weight: 700;
     }}
     code {{
       display: inline-block;
       max-width: 100%;
       padding: 4px 8px;
-      border: 1px solid #cad2dc;
-      background: #ffffff;
-      overflow-wrap: anywhere;
+      border: 1px solid #c7d2db;
+      background: var(--surface);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.94em;
     }}
     .hero {{
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
-      gap: 24px;
-      align-items: end;
-      padding-top: 12px;
+      grid-template-columns: minmax(0, 0.92fr) minmax(360px, 1.08fr);
+      gap: 26px;
+      align-items: stretch;
+      min-height: 430px;
+      padding: 18px 0 26px;
     }}
-    .hero-copy p {{
-      max-width: 68ch;
+    .hero-copy {{
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
     }}
-    .entrypoint code {{
-      font-size: 1.2rem;
-      border-color: #8fb1b7;
+    .hero-copy .lede {{
+      max-width: 64ch;
+    }}
+    .command-strip {{
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+      width: min(100%, 520px);
+      margin: 12px 0 0;
+      padding: 10px 12px;
+      border: 1px solid #b9c8d3;
+      background: var(--surface);
+    }}
+    .command-strip span {{
+      color: var(--warn);
+      font-weight: 850;
+    }}
+    .command-strip code {{
+      padding: 0;
+      border: 0;
+      background: transparent;
+      font-size: 1.12rem;
+      font-weight: 780;
+    }}
+    .terminal-panel {{
+      align-self: center;
+      min-width: 0;
+      border: 1px solid var(--terminal-line);
+      background: var(--terminal);
+      color: #dbe7ee;
+      box-shadow: 0 18px 48px rgb(26 42 54 / 16%);
+    }}
+    .terminal-toolbar {{
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      color: #aebcc7;
+      border-bottom: 1px solid var(--terminal-line);
+      font-size: 0.82rem;
+    }}
+    .terminal-toolbar strong {{
+      color: #8bd3dd;
+    }}
+    .terminal-panel pre {{
+      margin: 0;
+      padding: 16px;
+      overflow: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      white-space: pre;
     }}
     .action-row {{
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px 16px;
-      align-items: center;
       margin-top: 18px;
     }}
+    .primary-action,
+    .secondary-action,
+    .section-link,
+    .section-nav a {{
+      display: inline-flex;
+      min-height: 36px;
+      align-items: center;
+      padding: 7px 11px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      font-size: 0.94rem;
+    }}
     .primary-action {{
-      display: inline-block;
-      padding: 8px 12px;
       color: #ffffff;
-      background: #006b74;
+      border-color: var(--accent);
+      background: var(--accent);
       text-decoration: none;
     }}
     .primary-action:focus,
     .primary-action:hover {{
-      background: #00545b;
+      background: var(--accent-strong);
+    }}
+    .site-header nav .primary-action {{
+      color: #ffffff;
+      border-color: var(--accent);
+      background: var(--accent);
+      text-decoration: none;
     }}
     .kicker {{
       margin: 0 0 8px;
-      color: #6a4a00;
-      font-size: 0.78rem;
-      font-weight: 800;
+      color: var(--warn);
+      font-size: 0.76rem;
+      font-weight: 850;
       text-transform: uppercase;
+    }}
+    .page-band {{
+      padding: 24px 0;
+    }}
+    .feature-grid,
+    .detail-layout,
+    .prose-grid {{
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 0.48fr);
+      gap: 20px;
+      align-items: start;
+    }}
+    .span-all {{
+      grid-column: 1 / -1;
     }}
     .ops-snapshot {{
       display: grid;
-      gap: 8px;
-      padding: 14px;
-      border: 1px solid #cad2dc;
-      background: #ffffff;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      margin: 0;
+      padding: 0;
+      border: 1px solid var(--line);
+      background: var(--line);
     }}
-    .ops-snapshot span,
-    .metadata div,
-    .activity-list li {{
+    .ops-snapshot div {{
       display: flex;
       justify-content: space-between;
       gap: 16px;
+      padding: 11px 12px;
+      background: var(--surface);
+    }}
+    .ops-snapshot dt,
+    .metadata dt,
+    .metric-row dt,
+    .mini-metrics dt {{
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 850;
+      text-transform: uppercase;
+    }}
+    .ops-snapshot dd,
+    .metadata dd,
+    .metric-row dd,
+    .mini-metrics dd {{
+      margin: 0;
+      font-weight: 780;
     }}
     .metadata {{
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px 24px;
       margin: 16px 0 0;
     }}
-    .metadata dt {{
-      color: #536170;
-      font-size: 0.82rem;
-      font-weight: 750;
+    .metadata div {{
+      min-width: min(100%, 190px);
+      padding: 9px 0;
+      border-top: 1px solid var(--line);
     }}
-    .metadata dd {{
+    .metadata.rail {{
+      display: grid;
+      gap: 0;
       margin: 0;
+      padding: 0 14px;
+      border-left: 3px solid var(--accent);
+      background: var(--surface);
     }}
     .metric-row {{
       display: grid;
@@ -1006,149 +1192,244 @@ fn page(title: &str, body: &str) -> String {
       gap: 10px;
       margin: 18px 0 0;
     }}
+    .feature-grid .metric-row {{
+      margin: 0;
+    }}
     .metric-row div,
     .mini-metrics div {{
-      border-left: 3px solid #006b74;
-      background: #ffffff;
+      border-left: 3px solid var(--accent);
+      background: var(--surface);
       padding: 10px 12px;
-    }}
-    .metric-row dt,
-    .mini-metrics dt {{
-      color: #536170;
-      font-size: 0.76rem;
-      font-weight: 800;
-      text-transform: uppercase;
-    }}
-    .metric-row dd,
-    .mini-metrics dd {{
-      margin: 2px 0 0;
-      font-weight: 760;
     }}
     .table-wrap {{
       overflow-x: auto;
+      border: 1px solid var(--line);
+      background: var(--surface);
     }}
     table {{
       width: 100%;
       border-collapse: collapse;
     }}
     th, td {{
-      padding: 8px 10px;
-      border-bottom: 1px solid #d8dee6;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
       text-align: left;
       white-space: nowrap;
     }}
+    th {{
+      color: var(--muted);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+    }}
+    tr:last-child td {{
+      border-bottom: 0;
+    }}
+    .rank-pill {{
+      display: inline-flex;
+      min-width: 28px;
+      justify-content: center;
+      padding: 2px 8px;
+      border: 1px solid #abc2cc;
+      background: #eef7f8;
+      color: var(--accent-strong);
+      font-weight: 850;
+    }}
+    .section-heading {{
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 14px;
+    }}
+    .section-heading .kicker {{
+      grid-column: 1 / -1;
+      margin-bottom: -4px;
+    }}
+    .section-heading h2 {{
+      margin-bottom: 0;
+    }}
     .section-nav {{
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px 18px;
+      padding: 22px 0;
     }}
     .case-grid {{
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 12px;
       padding: 0;
       list-style: none;
     }}
     .case-grid li {{
+      display: grid;
+      gap: 10px;
+      min-height: 248px;
       padding: 14px;
-      border: 1px solid #d8dee6;
-      background: #ffffff;
+      border: 1px solid var(--line);
+      background: var(--surface);
     }}
-    .case-grid span,
+    .case-card-head {{
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+    }}
+    .case-grid span {{
+      color: var(--warn);
+      font-size: 0.78rem;
+      font-weight: 850;
+      text-transform: uppercase;
+    }}
     .case-grid small {{
-      display: block;
-      margin-top: 8px;
-      color: #536170;
+      color: var(--muted);
+      font-weight: 700;
     }}
     .mini-metrics {{
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 6px;
-      margin: 12px 0 0;
+      margin: 2px 0 0;
+      align-self: end;
     }}
     .mini-metrics div {{
       padding: 7px 8px;
-      border-left-color: #9a5b00;
+      border-left-color: var(--warn);
     }}
     .activity-list,
-    .replay-events {{
+    .replay-events,
+    .checklist {{
       display: grid;
       gap: 10px;
       padding: 0;
       list-style: none;
     }}
     .activity-list li,
-    .replay-events li {{
-      padding: 12px 0;
-      border-top: 1px solid #d8dee6;
+    .replay-events li,
+    .checklist li {{
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }}
+    .activity-list li {{
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(150px, auto);
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+    }}
+    .activity-list li div {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      align-items: baseline;
+    }}
+    .activity-list time,
+    .activity-list span {{
+      color: var(--muted);
     }}
     .replay-events li {{
       display: grid;
-      grid-template-columns: 42px 110px minmax(0, 1fr);
+      grid-template-columns: 42px 120px minmax(0, 1fr);
       gap: 12px;
       align-items: start;
+      padding: 12px;
     }}
     .replay-events span {{
-      color: #9a5b00;
-      font-weight: 800;
+      color: var(--warn);
+      font-weight: 850;
     }}
     .replay-events p {{
       margin: 0;
     }}
-    @media (max-width: 700px) {{
-      main {{
-        width: min(100vw - 24px, 1180px);
-        padding-top: 20px;
+    .checklist li {{
+      padding: 12px 14px;
+      border-left: 3px solid var(--accent);
+    }}
+    .backlink {{
+      grid-column: 1 / -1;
+      margin: 0;
+    }}
+    @media (max-width: 860px) {{
+      .hero,
+      .feature-grid,
+      .detail-layout,
+      .prose-grid {{
+        grid-template-columns: 1fr;
       }}
+      .ops-snapshot {{
+        grid-template-columns: 1fr;
+      }}
+      .feature-grid .metric-row {{
+        margin-top: 0;
+      }}
+    }}
+    @media (max-width: 700px) {{
+      main,
       .site-header,
       .site-footer {{
         width: min(100vw - 24px, 1180px);
       }}
+      main {{
+        padding-top: 20px;
+      }}
       .site-header {{
+        position: static;
         align-items: flex-start;
         flex-direction: column;
       }}
-      .hero {{
-        grid-template-columns: 1fr;
+      .site-header nav {{
+        width: 100%;
+      }}
+      .site-header nav a {{
+        min-height: 32px;
       }}
       h1 {{
         font-size: 2.35rem;
       }}
+      .hero {{
+        min-height: 0;
+      }}
+      .terminal-panel pre {{
+        font-size: 0.78rem;
+      }}
       .activity-list li,
-      .replay-events li {{
-        display: grid;
+      .replay-events li,
+      .section-heading {{
         grid-template-columns: 1fr;
-        gap: 4px;
+      }}
+      .mini-metrics {{
+        grid-template-columns: 1fr;
+      }}
+      th, td {{
+        padding: 9px 10px;
       }}
     }}
     @media (prefers-color-scheme: dark) {{
-      body {{
-        color: #e7edf3;
-        background: #111820;
+      :root {{
+        --ink: #e7edf3;
+        --muted: #9cafbf;
+        --surface: #17222d;
+        --surface-2: #111820;
+        --line: #2b3948;
+        --accent: #8bd3dd;
+        --accent-strong: #aadfe6;
+        --warn: #d2b15f;
       }}
-      section, nav, th, td, .case-grid li, .activity-list li, .replay-events li, .ops-snapshot, .site-header, .site-footer {{
-        border-color: #2b3948;
+      .lede {{
+        color: #c3d0db;
       }}
-      .case-grid li, .ops-snapshot, .metric-row div, .mini-metrics div, .skip-link {{
-        background: #16212d;
-      }}
-      a, .brand {{
-        color: #8bd3dd;
+      .site-header {{
+        background: color-mix(in srgb, var(--surface-2) 92%, transparent);
       }}
       .primary-action {{
         color: #071013;
-        background: #8bd3dd;
       }}
-      .primary-action:focus,
-      .primary-action:hover {{
-        background: #aadfe6;
+      .site-header nav .primary-action {{
+        color: #071013;
       }}
-      .kicker {{
-        color: #d2b15f;
+      .rank-pill {{
+        border-color: #365365;
+        background: #142b35;
       }}
       code {{
         border-color: #3a4a5c;
-        background: #182330;
       }}
     }}
   </style>
@@ -1163,6 +1444,7 @@ fn page(title: &str, body: &str) -> String {
       <a href="/replays">Replays</a>
       <a href="/authoring">Authoring</a>
       <a href="/status">Status</a>
+      <a class="primary-action" href="/#ssh-entrypoint">SSH in now</a>
     </nav>
   </header>
   <main id="main">{}</main>
