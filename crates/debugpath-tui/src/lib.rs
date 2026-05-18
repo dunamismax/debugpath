@@ -51,7 +51,8 @@ impl AppModel {
             active_pane: 0,
             command_line: String::new(),
             notes: Vec::new(),
-            last_output: "Type `commands` to list fixture-backed commands.".to_owned(),
+            last_output: "Type `commands` for fixtures or `artifacts` for browsable case files."
+                .to_owned(),
             status: format!("Loaded seed case: {title}"),
         }
     }
@@ -145,6 +146,38 @@ impl AppModel {
         if input == "commands" {
             self.last_output = self.command_catalog();
             self.status = "Listed fixture-backed commands.".to_owned();
+            return;
+        }
+
+        if input == "artifacts" {
+            self.last_output = self.artifact_catalog();
+            self.status = "Listed browsable case artifacts.".to_owned();
+            return;
+        }
+
+        if let Some(path) = input
+            .strip_prefix("show ")
+            .or_else(|| input.strip_prefix("open "))
+        {
+            match self.artifact_content(path.trim()) {
+                Some(output) => {
+                    self.last_output = output;
+                    self.status = format!("Viewing artifact `{}`.", path.trim());
+                }
+                None => {
+                    self.last_output = format!(
+                        "Unknown artifact `{}`.\nRun `artifacts` to list browsable case files.",
+                        path.trim()
+                    );
+                    self.status = "Artifact not found.".to_owned();
+                }
+            }
+            return;
+        }
+
+        if input == "hints" {
+            self.last_output = self.hint_catalog();
+            self.status = "Listed authored hints.".to_owned();
             return;
         }
 
@@ -345,15 +378,14 @@ impl AppModel {
             .map(|fix| format!("- {}: {} ({:?})", fix.id, fix.title, fix.kind))
             .collect::<Vec<_>>()
             .join("\n");
-        let hints = case
-            .hints
-            .iter()
-            .map(|hint| format!("- {} (cost {})", hint.id, hint.cost))
-            .collect::<Vec<_>>()
-            .join("\n");
         format!(
-            "Summary: {}\nComponent: {}\nStarts: {}\n\nFix options:\n{}\n\nHints:\n{}",
-            case.metadata.summary, case.metadata.component, case.metadata.starts_at, fixes, hints
+            "Summary: {}\nComponent: {}\nStarts: {}\n\nFix options:\n{}\n\n{}\n\n{}",
+            case.metadata.summary,
+            case.metadata.component,
+            case.metadata.starts_at,
+            fixes,
+            self.hint_catalog(),
+            self.artifact_catalog()
         )
     }
 
@@ -401,7 +433,7 @@ impl AppModel {
         [
             self.command_catalog_for(CommandKind::Shell),
             self.command_catalog_for(CommandKind::Sql),
-            "Meta commands:\n- commands\n- hint [hint_id]\n- note <text>\n- diagnose <root>|<evidence_csv>|<component>|<fix>|<blast_radius>\n- fix <fix_id>"
+            "Meta commands:\n- commands\n- artifacts\n- show <artifact>\n- hints\n- hint [hint_id]\n- note <text>\n- diagnose <root>|<evidence_csv>|<component>|<fix>|<blast_radius>\n- fix <fix_id>"
                 .to_owned(),
         ]
         .join("\n\n")
@@ -422,6 +454,66 @@ impl AppModel {
             .collect::<Vec<_>>()
             .join("\n");
         format!("{title}\n{commands}")
+    }
+
+    fn artifact_catalog(&self) -> String {
+        let case = self.session.case();
+        let mut lines = vec![
+            "Browsable artifacts:".to_owned(),
+            "- brief".to_owned(),
+            "- logs".to_owned(),
+            "- metrics".to_owned(),
+            "- schema.sql".to_owned(),
+            "- traces".to_owned(),
+        ];
+        lines.extend(
+            case.artifacts
+                .sql_rows
+                .keys()
+                .map(|path| format!("- {path}")),
+        );
+        lines.extend(case.artifacts.diffs.keys().map(|path| format!("- {path}")));
+        lines.extend(
+            case.artifacts
+                .runbooks
+                .keys()
+                .map(|path| format!("- {path}")),
+        );
+        lines.join("\n")
+    }
+
+    fn artifact_content(&self, path: &str) -> Option<String> {
+        let case = self.session.case();
+        match path {
+            "brief" | "brief.md" => Some(case.artifacts.brief.clone()),
+            "logs" | "logs.ndjson" => Some(logs_content(case)),
+            "metrics" | "metrics.toml" => Some(metrics_content(case)),
+            "schema" | "schema.sql" => Some(case.artifacts.schema_sql.clone()),
+            "traces" | "traces.json" => Some(trace_content(case)),
+            _ => case
+                .artifacts
+                .sql_rows
+                .get(path)
+                .or_else(|| case.artifacts.diffs.get(path))
+                .or_else(|| case.artifacts.runbooks.get(path))
+                .cloned(),
+        }
+    }
+
+    fn hint_catalog(&self) -> String {
+        let hints = self
+            .session
+            .case()
+            .hints
+            .iter()
+            .map(|hint| format!("- {} (cost {}): {}", hint.id, hint.cost, hint.text))
+            .collect::<Vec<_>>()
+            .join("\n");
+        if hints.is_empty() {
+            "This case has no authored hints.".to_owned()
+        } else {
+            format!("Authored hints:\n{hints}")
+        }
     }
 }
 
@@ -524,6 +616,48 @@ mod tests {
             Some(debugpath_engine::ReplayEvent::CommandRun { command, .. })
                 if command == "logs checkout-api --since 10m"
         ));
+    }
+
+    #[test]
+    fn browses_case_artifacts_notes_and_hints() {
+        let mut model = AppModel::new(fixture_case());
+
+        model.execute("artifacts");
+        assert!(model.last_output().contains("logs"));
+        assert!(model.last_output().contains("diffs/query-shape.diff"));
+        assert!(model.last_output().contains("runbooks/checkout.md"));
+
+        model.execute("show diffs/query-shape.diff");
+        assert!(model.last_output().contains("orders"));
+
+        model.execute("show runbooks/checkout.md");
+        assert!(model.last_output().contains("Checkout"));
+
+        model.execute("hints");
+        assert!(model.last_output().contains("Authored hints"));
+
+        model.execute("hint");
+        assert!(matches!(
+            model.session().replay().last(),
+            Some(debugpath_engine::ReplayEvent::HintUsed { .. })
+        ));
+
+        model.execute("note compare deploy diff to query plan");
+        for _ in 0..7 {
+            model.next_pane();
+        }
+        let notes = model.render_to_string(96, 28).expect("renders after note");
+        assert!(notes.contains("compare deploy diff to query plan"));
+    }
+
+    #[test]
+    fn renders_predictable_narrow_terminal_fallback() {
+        let model = AppModel::new(fixture_case());
+        let view = model.render_to_string(30, 8).expect("compact render");
+
+        assert!(view.contains("debugpath.dev"));
+        assert!(view.contains("Slow Checkout"));
+        assert!(view.contains("Pane: Brief"));
     }
 
     #[test]

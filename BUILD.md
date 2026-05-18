@@ -149,7 +149,7 @@ MVP means the core game is usable end to end:
 - [x] Three polished deterministic cases ship with realistic artifacts and at
       least one plausible false trail each.
 - [x] Structured case loader validates cases before runtime.
-- [ ] Player can browse brief, logs, metrics, shell output, SQL output,
+- [x] Player can browse brief, logs, metrics, shell output, SQL output,
       traces, diffs, runbooks, notes, and hints where a case provides them.
 - [x] Constrained shell and SQL commands are backed by case fixtures, not by
       host shell access.
@@ -220,7 +220,7 @@ diagnosed, fixed, scored, and replayed without a UI.
       form, fix selection, and results view.
 - [x] Keep host filesystem and host shell unavailable to players.
 - [x] Capture replay events from meaningful player actions.
-- [ ] Test terminal sizing, disconnect behavior, narrow layouts, and bad
+- [x] Test terminal sizing, disconnect behavior, narrow layouts, and bad
       input paths.
 
 Phase 3 note: local SSH now binds to configurable loopback by default
@@ -228,9 +228,10 @@ Phase 3 note: local SSH now binds to configurable loopback by default
 content/engine-backed TUI app per SSH session, renders the Ratatui screen over
 the SSH channel, runs fixture-backed commands, rejects SSH `exec` and unknown
 host-shell-style commands, and has a russh client smoke test for PTY render,
-bad input, and a fixture command. The remaining unchecked Phase 3 work is the
-full command palette, interactive diagnosis/fix/result views, complete artifact
-browsing for every pane, and broader resize/disconnect/narrow-layout coverage.
+bad input, resize into the compact layout, disconnect cleanup, and a fixture
+command. Players can browse authored artifacts through core panes plus
+`artifacts` and `show <artifact>`. The remaining unchecked Phase 3 work is the
+full command palette and interactive diagnosis/fix/result views.
 
 Exit criteria: a local SSH session can play one complete case end to end.
 

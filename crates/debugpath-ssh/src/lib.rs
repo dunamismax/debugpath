@@ -715,7 +715,7 @@ pub mod abuse {
 mod ssh_tests {
     use super::*;
     use russh::{ChannelMsg, client};
-    use std::sync::Arc;
+    use std::sync::{Arc, Mutex};
     use tokio::time::{Duration, Instant, timeout};
 
     struct SmokeClient;
@@ -741,6 +741,7 @@ mod ssh_tests {
         let addr = socket.local_addr().expect("local addr");
         let server_config = Arc::new(ssh_server_config());
         let mut server = LocalServer::new(case, abuse::AbuseConfig::default());
+        let abuse = server.abuse.clone();
         let server_task =
             tokio::spawn(async move { server.run_on_socket(server_config, &socket).await });
 
@@ -787,7 +788,61 @@ mod ssh_tests {
             .expect("fixture output");
         assert!(accepted.contains("Fixture-backed command ran"));
 
+        channel
+            .window_change(30, 8, 0, 0)
+            .await
+            .expect("resize accepted");
+        let compact = read_until(&mut channel, "Pane: Brief")
+            .await
+            .expect("compact resize output");
+        assert!(compact.contains("debugpath.dev"));
+
         channel.data(&b"q"[..]).await.expect("quit");
+        wait_for_no_active_sessions(&abuse, "127.0.0.1").await;
+        let _ = client
+            .disconnect(russh::Disconnect::ByApplication, "done", "en")
+            .await;
+        server_task.abort();
+    }
+
+    #[tokio::test]
+    async fn local_ssh_rejects_exec_without_host_command_execution() {
+        let cases_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../cases");
+        let case = load_seed_case(cases_root, DEFAULT_DEV_CASE_SLUG).expect("seed case loads");
+        let socket = TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind random local port");
+        let addr = socket.local_addr().expect("local addr");
+        let server_config = Arc::new(ssh_server_config());
+        let mut server = LocalServer::new(case, abuse::AbuseConfig::default());
+        let server_task =
+            tokio::spawn(async move { server.run_on_socket(server_config, &socket).await });
+
+        let client_config = Arc::new(client::Config {
+            inactivity_timeout: Some(Duration::from_secs(5)),
+            ..Default::default()
+        });
+        let mut client = client::connect(client_config, addr, SmokeClient)
+            .await
+            .expect("client connects");
+        let auth = client
+            .authenticate_none("anonymous")
+            .await
+            .expect("anonymous auth returns");
+        assert!(auth.success());
+
+        let mut channel = client.channel_open_session().await.expect("channel opens");
+        channel
+            .exec(true, b"cat /etc/passwd".to_vec())
+            .await
+            .expect("exec request sent");
+
+        let output = read_until(&mut channel, "does not execute SSH exec requests")
+            .await
+            .expect("exec rejection output");
+        assert!(output.contains("all commands are fixture-backed"));
+        assert!(!output.contains("root:"));
+
         let _ = client
             .disconnect(russh::Disconnect::ByApplication, "done", "en")
             .await;
@@ -823,6 +878,21 @@ mod ssh_tests {
                 }
                 Err(_) => {}
             }
+        }
+    }
+
+    async fn wait_for_no_active_sessions(abuse: &Arc<Mutex<abuse::AbuseControls>>, peer: &str) {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            let active = abuse.lock().expect("abuse lock").active_sessions(peer);
+            if active == 0 {
+                return;
+            }
+            assert!(
+                Instant::now() < deadline,
+                "timed out waiting for active session cleanup; active={active}"
+            );
+            tokio::time::sleep(Duration::from_millis(25)).await;
         }
     }
 }
