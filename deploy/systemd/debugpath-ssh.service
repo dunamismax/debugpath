@@ -1,0 +1,22 @@
+[Unit]
+Description=debugpath SSH terminal service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=debugpath
+Group=debugpath
+WorkingDirectory=/opt/debugpath/current
+EnvironmentFile=/etc/debugpath/debugpath.env
+ExecStart=/opt/debugpath/current/bin/debugpath-ssh
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/debugpath
+
+[Install]
+WantedBy=multi-user.target
