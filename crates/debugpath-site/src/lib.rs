@@ -562,16 +562,23 @@ pub fn render_home(data: &SiteData) -> String {
                 </div>
                 <div class="terminal-panel" aria-label="incident console preview">
                     <div class="terminal-toolbar">
-                        <span>"debugpath session"</span>
-                        <strong>"live fixture"</strong>
+                        <span class="terminal-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                        <span>"player@debugpath ~ ssh debugpath.dev"</span>
+                        <strong>"● live"</strong>
                     </div>
-                    <pre>"Brief   Systems   Logs   Metrics   Shell   SQL   Trace   Notes
-case: slow-checkout        status: investigating
-logs checkout-api --since 10m
-  WARN p95=4.2s deploy=checkout-query-shape
-sql explain checkout_recent_orders
-  Seq Scan on orders  rows=1.2M
-diagnosis: missing composite index"</pre>
+                    <pre>"┌─ Brief ──── Systems ── Logs ── Metrics ── Shell ── SQL ── Trace ── Notes ─┐
+│ case: slow-checkout                            status: investigating       │
+└────────────────────────────────────────────────────────────────────────────┘
+$ logs checkout-api --since 10m
+  WARN  p95=4.2s   deploy=checkout-query-shape   trace=8d3a…
+  WARN  pool=exhausted  waiters=42  acquired=avg 1.8s
+$ sql explain checkout_recent_orders
+  Seq Scan on orders  rows=1.2M  cost=18421
+  Filter: status = 'pending' AND created_at > now() - '24h'
+$ diagnose
+  root_cause   : missing composite index (status, created_at)
+  evidence     : seq-scan-orders, deploy-checkout-query-shape
+  fix          : add_orders_status_created_at_index"</pre>
                 </div>
             </section>
             <dl class="ops-snapshot" aria-label="site snapshot">
@@ -879,45 +886,101 @@ where
 fn page(title: &str, body: &str) -> String {
     format!(
         r##"<!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="debugpath.dev is an SSH-native incident lab. Solve production incidents from a terminal: read logs, query fixtures, inspect traces, and prove the root cause.">
   <title>{}</title>
+  <script>
+    (function() {{
+      try {{
+        var stored = localStorage.getItem('debugpath-theme');
+        if (stored === 'light' || stored === 'dark') {{
+          document.documentElement.setAttribute('data-theme', stored);
+        }}
+      }} catch (e) {{}}
+    }})();
+  </script>
   <style>
     :root {{
-      color-scheme: light dark;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
       line-height: 1.5;
       font-size: 16px;
-      --ink: #17202a;
-      --muted: #536170;
-      --surface: #ffffff;
-      --surface-2: #eef3f6;
-      --line: #d5dee6;
-      --accent: #006b74;
-      --accent-strong: #064e54;
-      --warn: #9a5b00;
-      --terminal: #101820;
-      --terminal-line: #263542;
+      --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    }}
+    [data-theme="dark"] {{
+      color-scheme: dark;
+      --canvas: #0d1117;
+      --canvas-subtle: #161b22;
+      --canvas-inset: #010409;
+      --canvas-overlay: #1c2128;
+      --border: #30363d;
+      --border-muted: #21262d;
+      --fg: #e6edf3;
+      --fg-muted: #7d8590;
+      --fg-subtle: #6e7681;
+      --accent: #2f81f7;
+      --accent-fg: #58a6ff;
+      --accent-emphasis: #1f6feb;
+      --success: #3fb950;
+      --attention: #d29922;
+      --danger: #f85149;
+      --on-accent: #ffffff;
+      --shadow: 0 8px 24px rgb(1 4 9 / 50%);
+      --header-bg: rgba(13, 17, 23, 0.85);
+    }}
+    [data-theme="light"] {{
+      color-scheme: light;
+      --canvas: #ffffff;
+      --canvas-subtle: #f6f8fa;
+      --canvas-inset: #eaeef2;
+      --canvas-overlay: #ffffff;
+      --border: #d0d7de;
+      --border-muted: #d8dee4;
+      --fg: #1f2328;
+      --fg-muted: #59636e;
+      --fg-subtle: #6e7781;
+      --accent: #0969da;
+      --accent-fg: #0969da;
+      --accent-emphasis: #0550ae;
+      --success: #1a7f37;
+      --attention: #9a6700;
+      --danger: #d1242f;
+      --on-accent: #ffffff;
+      --shadow: 0 6px 18px rgb(31 35 40 / 8%);
+      --header-bg: rgba(255, 255, 255, 0.85);
     }}
     * {{
       box-sizing: border-box;
     }}
-    body {{
+    html, body {{
       margin: 0;
-      color: var(--ink);
-      background: var(--surface-2);
+    }}
+    body {{
+      color: var(--fg);
+      background: var(--canvas);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }}
+    ::selection {{
+      background: color-mix(in srgb, var(--accent) 35%, transparent);
+    }}
+    *:focus-visible {{
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }}
     .skip-link {{
       position: absolute;
       left: 12px;
       top: -48px;
-      padding: 8px 10px;
-      color: var(--ink);
-      background: var(--surface);
-      border: 1px solid var(--ink);
-      z-index: 2;
+      padding: 8px 12px;
+      color: var(--fg);
+      background: var(--canvas-overlay);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      z-index: 10;
     }}
     .skip-link:focus {{
       top: 12px;
@@ -931,100 +994,192 @@ fn page(title: &str, body: &str) -> String {
     .site-header {{
       position: sticky;
       top: 0;
-      z-index: 1;
+      z-index: 5;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 18px;
-      padding: 14px 0;
-      border-bottom: 1px solid var(--line);
-      background: color-mix(in srgb, var(--surface-2) 92%, transparent);
-      backdrop-filter: blur(10px);
+      gap: 16px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-muted);
+      background: var(--header-bg);
+      backdrop-filter: saturate(160%) blur(12px);
+      -webkit-backdrop-filter: saturate(160%) blur(12px);
     }}
-    .site-header nav,
-    .site-footer,
-    .action-row,
-    .metadata,
-    .section-nav {{
+    .brand-block {{
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }}
+    .brand {{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--fg);
+      font-size: 0.98rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      text-decoration: none;
+    }}
+    .brand-mark {{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--canvas-subtle);
+      color: var(--success);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }}
+    .brand-tag {{
+      display: none;
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--fg-muted);
+      font-size: 0.74rem;
+      font-weight: 500;
+    }}
+    @media (min-width: 980px) {{
+      .brand-tag {{ display: inline-flex; }}
+    }}
+    .site-header nav {{
       display: flex;
       flex-wrap: wrap;
       align-items: center;
+      gap: 4px 6px;
+    }}
+    .site-header nav a {{
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      color: var(--fg-muted);
+      font-size: 0.88rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: color .12s ease, background .12s ease;
+    }}
+    .site-header nav a:hover {{
+      color: var(--fg);
+      background: var(--canvas-subtle);
+    }}
+    .theme-toggle {{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 34px;
+      height: 32px;
+      margin-left: 4px;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--canvas-subtle);
+      color: var(--fg-muted);
+      font: inherit;
+      cursor: pointer;
+      transition: color .12s ease, background .12s ease, border-color .12s ease;
+    }}
+    .theme-toggle:hover {{
+      color: var(--fg);
+      border-color: var(--fg-subtle);
+      background: var(--canvas-overlay);
+    }}
+    .theme-toggle .icon {{
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }}
+    [data-theme="dark"] .theme-toggle .icon-sun {{ display: inline-flex; }}
+    [data-theme="dark"] .theme-toggle .icon-moon {{ display: none; }}
+    [data-theme="light"] .theme-toggle .icon-sun {{ display: none; }}
+    [data-theme="light"] .theme-toggle .icon-moon {{ display: inline-flex; }}
+    .site-footer {{
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
       gap: 10px 16px;
+      padding: 20px 0 32px;
+      margin-top: 24px;
+      border-top: 1px solid var(--border-muted);
+      color: var(--fg-muted);
+      font-size: 0.86rem;
     }}
-    .brand {{
-      color: var(--ink);
-      font-size: 1rem;
-      font-weight: 850;
+    .site-footer a {{
+      color: var(--accent-fg);
       text-decoration: none;
     }}
-    .site-header nav a,
-    .section-nav a,
-    .secondary-action,
-    .section-link {{
-      color: var(--accent-strong);
-      text-decoration: none;
-    }}
-    .site-header nav a:hover,
-    .section-nav a:hover,
-    .secondary-action:hover,
-    .section-link:hover {{
+    .site-footer a:hover {{
       text-decoration: underline;
     }}
-    .site-footer {{
-      justify-content: space-between;
-      padding: 20px 0 34px;
-      border-top: 1px solid var(--line);
-      color: var(--muted);
-    }}
     main {{
-      padding: 28px 0 48px;
+      padding: 28px 0 24px;
     }}
-    h1, h2, p, a, code, td, dd {{
+    h1, h2, h3, p, a, code, td, dd {{
       overflow-wrap: anywhere;
     }}
-    h1, h2 {{
+    h1, h2, h3 {{
       margin: 0 0 12px;
-      letter-spacing: 0;
+      letter-spacing: -0.015em;
+      color: var(--fg);
     }}
     h1 {{
-      font-size: 3rem;
-      line-height: 1;
+      font-size: 2.25rem;
+      line-height: 1.15;
+      font-weight: 700;
     }}
     h2 {{
-      font-size: 1.45rem;
-      line-height: 1.15;
+      font-size: 1.35rem;
+      line-height: 1.2;
+      font-weight: 600;
+    }}
+    h3 {{
+      font-size: 1.05rem;
+      font-weight: 600;
     }}
     p {{
       margin: 0 0 12px;
     }}
     .lede {{
-      max-width: 76ch;
-      color: #2b3b48;
-      font-size: 1.05rem;
-    }}
-    section, nav {{
-      border-bottom: 1px solid var(--line);
+      max-width: 72ch;
+      color: var(--fg-muted);
+      font-size: 1.02rem;
     }}
     a {{
-      color: var(--accent);
-      font-weight: 700;
+      color: var(--accent-fg);
+      font-weight: 500;
+      text-decoration: none;
+    }}
+    a:hover {{
+      text-decoration: underline;
     }}
     code {{
       display: inline-block;
       max-width: 100%;
-      padding: 4px 8px;
-      border: 1px solid #c7d2db;
-      background: var(--surface);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      font-size: 0.94em;
+      padding: 2px 6px;
+      border: 1px solid var(--border-muted);
+      border-radius: 6px;
+      background: var(--canvas-subtle);
+      color: var(--fg);
+      font-family: var(--mono);
+      font-size: 0.86em;
     }}
     .hero {{
       display: grid;
       grid-template-columns: minmax(0, 0.92fr) minmax(360px, 1.08fr);
-      gap: 26px;
+      gap: 28px;
       align-items: stretch;
-      min-height: 430px;
-      padding: 18px 0 26px;
+      padding: 24px 0 32px;
+      border-bottom: 1px solid var(--border-muted);
     }}
     .hero-copy {{
       display: flex;
@@ -1033,106 +1188,164 @@ fn page(title: &str, body: &str) -> String {
       min-width: 0;
     }}
     .hero-copy .lede {{
-      max-width: 64ch;
+      max-width: 60ch;
+      font-size: 1.08rem;
     }}
     .command-strip {{
       display: grid;
       grid-template-columns: auto minmax(0, 1fr);
-      gap: 10px;
+      gap: 12px;
       align-items: center;
-      width: min(100%, 520px);
-      margin: 12px 0 0;
-      padding: 10px 12px;
-      border: 1px solid #b9c8d3;
-      background: var(--surface);
+      width: min(100%, 540px);
+      margin: 18px 0 0;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--canvas-subtle);
+      font-family: var(--mono);
     }}
     .command-strip span {{
-      color: var(--warn);
-      font-weight: 850;
+      color: var(--success);
+      font-weight: 700;
     }}
     .command-strip code {{
       padding: 0;
       border: 0;
       background: transparent;
-      font-size: 1.12rem;
-      font-weight: 780;
+      color: var(--fg);
+      font-size: 1.05rem;
+      font-weight: 500;
     }}
     .terminal-panel {{
       align-self: center;
       min-width: 0;
-      border: 1px solid var(--terminal-line);
-      background: var(--terminal);
-      color: #dbe7ee;
-      box-shadow: 0 18px 48px rgb(26 42 54 / 16%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--canvas-inset);
+      color: #d1d7e0;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }}
+    [data-theme="light"] .terminal-panel {{
+      background: #0d1117;
+      border-color: #0d1117;
     }}
     .terminal-toolbar {{
       display: flex;
+      align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 10px 12px;
-      color: #aebcc7;
-      border-bottom: 1px solid var(--terminal-line);
-      font-size: 0.82rem;
+      padding: 10px 14px;
+      color: #8b949e;
+      border-bottom: 1px solid #21262d;
+      background: linear-gradient(180deg, #161b22 0%, #0d1117 100%);
+      font-size: 0.78rem;
+      font-family: var(--mono);
     }}
     .terminal-toolbar strong {{
-      color: #8bd3dd;
+      color: #3fb950;
+      font-weight: 600;
     }}
+    .terminal-dots {{
+      display: inline-flex;
+      gap: 6px;
+      margin-right: 8px;
+    }}
+    .terminal-dots i {{
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #30363d;
+      display: inline-block;
+    }}
+    .terminal-dots i:nth-child(1) {{ background: #f85149; }}
+    .terminal-dots i:nth-child(2) {{ background: #d29922; }}
+    .terminal-dots i:nth-child(3) {{ background: #3fb950; }}
     .terminal-panel pre {{
       margin: 0;
-      padding: 16px;
+      padding: 18px;
       overflow: auto;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      font-size: 0.88rem;
-      line-height: 1.55;
+      font-family: var(--mono);
+      font-size: 0.86rem;
+      line-height: 1.6;
       white-space: pre;
+      color: #c9d1d9;
     }}
     .action-row {{
-      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
     }}
     .primary-action,
     .secondary-action,
     .section-link,
     .section-nav a {{
       display: inline-flex;
-      min-height: 36px;
+      min-height: 32px;
       align-items: center;
-      padding: 7px 11px;
-      border: 1px solid var(--line);
-      background: var(--surface);
-      font-size: 0.94rem;
+      padding: 5px 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--canvas-subtle);
+      color: var(--fg);
+      font-size: 0.88rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background .12s ease, border-color .12s ease;
+    }}
+    .secondary-action:hover,
+    .section-link:hover,
+    .section-nav a:hover {{
+      background: var(--canvas-overlay);
+      border-color: var(--fg-subtle);
+      text-decoration: none;
     }}
     .primary-action {{
-      color: #ffffff;
-      border-color: var(--accent);
+      color: var(--on-accent);
+      border-color: var(--accent-emphasis);
       background: var(--accent);
-      text-decoration: none;
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
     }}
-    .primary-action:focus,
     .primary-action:hover {{
-      background: var(--accent-strong);
+      background: var(--accent-emphasis);
+      border-color: var(--accent-emphasis);
+      text-decoration: none;
     }}
     .site-header nav .primary-action {{
-      color: #ffffff;
-      border-color: var(--accent);
+      min-height: 28px;
+      padding: 4px 12px;
+      margin-left: 6px;
+      color: var(--on-accent);
+      border-color: var(--accent-emphasis);
       background: var(--accent);
-      text-decoration: none;
+      font-size: 0.86rem;
+    }}
+    .site-header nav .primary-action:hover {{
+      background: var(--accent-emphasis);
     }}
     .kicker {{
-      margin: 0 0 8px;
-      color: var(--warn);
-      font-size: 0.76rem;
-      font-weight: 850;
+      margin: 0 0 10px;
+      color: var(--accent-fg);
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
     }}
     .page-band {{
-      padding: 24px 0;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--border-muted);
+    }}
+    .page-band:last-of-type {{
+      border-bottom: 0;
     }}
     .feature-grid,
     .detail-layout,
     .prose-grid {{
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(260px, 0.48fr);
-      gap: 20px;
+      gap: 24px;
       align-items: start;
     }}
     .span-all {{
@@ -1141,26 +1354,33 @@ fn page(title: &str, body: &str) -> String {
     .ops-snapshot {{
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1px;
+      gap: 0;
       margin: 0;
       padding: 0;
-      border: 1px solid var(--line);
-      background: var(--line);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--canvas-subtle);
+      overflow: hidden;
     }}
     .ops-snapshot div {{
       display: flex;
       justify-content: space-between;
+      align-items: baseline;
       gap: 16px;
-      padding: 11px 12px;
-      background: var(--surface);
+      padding: 14px 16px;
+      border-right: 1px solid var(--border-muted);
+    }}
+    .ops-snapshot div:last-child {{
+      border-right: 0;
     }}
     .ops-snapshot dt,
     .metadata dt,
     .metric-row dt,
     .mini-metrics dt {{
-      color: var(--muted);
-      font-size: 0.76rem;
-      font-weight: 850;
+      color: var(--fg-muted);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
     }}
     .ops-snapshot dd,
@@ -1168,78 +1388,117 @@ fn page(title: &str, body: &str) -> String {
     .metric-row dd,
     .mini-metrics dd {{
       margin: 0;
-      font-weight: 780;
+      color: var(--fg);
+      font-family: var(--mono);
+      font-size: 1.05rem;
+      font-weight: 600;
     }}
     .metadata {{
-      margin: 16px 0 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0;
+      margin: 18px 0 0;
     }}
     .metadata div {{
-      min-width: min(100%, 190px);
-      padding: 9px 0;
-      border-top: 1px solid var(--line);
+      flex: 1 1 180px;
+      min-width: 0;
+      padding: 10px 14px;
+      border-top: 1px solid var(--border-muted);
+    }}
+    .metadata div + div {{
+      border-left: 1px solid var(--border-muted);
     }}
     .metadata.rail {{
       display: grid;
       gap: 0;
       margin: 0;
-      padding: 0 14px;
+      padding: 4px 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--canvas-subtle);
+    }}
+    .metadata.rail div {{
+      flex: none;
+      padding: 10px 16px;
+      border-top: 0;
       border-left: 3px solid var(--accent);
-      background: var(--surface);
     }}
     .metric-row {{
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 10px;
-      margin: 18px 0 0;
+      margin: 20px 0 0;
     }}
     .feature-grid .metric-row {{
       margin: 0;
     }}
     .metric-row div,
     .mini-metrics div {{
+      border: 1px solid var(--border);
       border-left: 3px solid var(--accent);
-      background: var(--surface);
-      padding: 10px 12px;
+      border-radius: 6px;
+      background: var(--canvas-subtle);
+      padding: 12px 14px;
+    }}
+    .metric-row dt,
+    .mini-metrics dt {{
+      display: block;
+      margin-bottom: 4px;
     }}
     .table-wrap {{
       overflow-x: auto;
-      border: 1px solid var(--line);
-      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--canvas-subtle);
     }}
     table {{
       width: 100%;
       border-collapse: collapse;
     }}
     th, td {{
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--line);
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-muted);
       text-align: left;
       white-space: nowrap;
+      font-size: 0.9rem;
     }}
-    th {{
-      color: var(--muted);
-      font-size: 0.76rem;
+    thead th {{
+      background: var(--canvas-overlay);
+      color: var(--fg-muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
+    }}
+    tbody tr:hover {{
+      background: var(--canvas-overlay);
     }}
     tr:last-child td {{
       border-bottom: 0;
+    }}
+    td strong {{
+      font-family: var(--mono);
+      font-weight: 600;
     }}
     .rank-pill {{
       display: inline-flex;
       min-width: 28px;
       justify-content: center;
       padding: 2px 8px;
-      border: 1px solid #abc2cc;
-      background: #eef7f8;
-      color: var(--accent-strong);
-      font-weight: 850;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--canvas-overlay);
+      color: var(--accent-fg);
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      font-weight: 600;
     }}
     .section-heading {{
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 12px;
       align-items: end;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
     }}
     .section-heading .kicker {{
       grid-column: 1 / -1;
@@ -1249,22 +1508,31 @@ fn page(title: &str, body: &str) -> String {
       margin-bottom: 0;
     }}
     .section-nav {{
-      padding: 22px 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 28px 0;
+      border-top: 1px solid var(--border-muted);
     }}
     .case-grid {{
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
       padding: 0;
       list-style: none;
     }}
     .case-grid li {{
       display: grid;
       gap: 10px;
-      min-height: 248px;
-      padding: 14px;
-      border: 1px solid var(--line);
-      background: var(--surface);
+      min-height: 240px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--canvas-subtle);
+      transition: border-color .12s ease, transform .12s ease;
+    }}
+    .case-grid li:hover {{
+      border-color: var(--accent);
     }}
     .case-card-head {{
       display: flex;
@@ -1272,47 +1540,71 @@ fn page(title: &str, body: &str) -> String {
       gap: 12px;
       align-items: baseline;
     }}
+    .case-card-head a {{
+      color: var(--fg);
+      font-weight: 600;
+      font-size: 1.02rem;
+    }}
+    .case-card-head a:hover {{
+      color: var(--accent-fg);
+    }}
     .case-grid span {{
-      color: var(--warn);
-      font-size: 0.78rem;
-      font-weight: 850;
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--attention);
+      background: color-mix(in srgb, var(--attention) 12%, transparent);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
     }}
+    .case-grid p {{
+      margin: 0;
+      color: var(--fg-muted);
+      font-size: 0.93rem;
+    }}
     .case-grid small {{
-      color: var(--muted);
-      font-weight: 700;
+      color: var(--fg-muted);
+      font-family: var(--mono);
+      font-size: 0.78rem;
     }}
     .mini-metrics {{
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 6px;
-      margin: 2px 0 0;
+      margin: 4px 0 0;
       align-self: end;
     }}
     .mini-metrics div {{
-      padding: 7px 8px;
-      border-left-color: var(--warn);
+      padding: 7px 10px;
+      border-left-color: var(--attention);
+    }}
+    .mini-metrics dd {{
+      font-size: 0.95rem;
     }}
     .activity-list,
     .replay-events,
     .checklist {{
       display: grid;
       gap: 10px;
+      margin: 0;
       padding: 0;
       list-style: none;
     }}
     .activity-list li,
     .replay-events li,
     .checklist li {{
-      border: 1px solid var(--line);
-      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--canvas-subtle);
     }}
     .activity-list li {{
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto minmax(150px, auto);
-      gap: 12px;
+      gap: 14px;
       align-items: center;
-      padding: 12px;
+      padding: 14px 16px;
     }}
     .activity-list li div {{
       display: flex;
@@ -1320,31 +1612,60 @@ fn page(title: &str, body: &str) -> String {
       gap: 6px 10px;
       align-items: baseline;
     }}
+    .activity-list strong {{
+      color: var(--success);
+      font-family: var(--mono);
+      font-weight: 600;
+    }}
     .activity-list time,
     .activity-list span {{
-      color: var(--muted);
+      color: var(--fg-muted);
+      font-family: var(--mono);
+      font-size: 0.84rem;
     }}
     .replay-events li {{
       display: grid;
-      grid-template-columns: 42px 120px minmax(0, 1fr);
-      gap: 12px;
+      grid-template-columns: 44px 120px minmax(0, 1fr);
+      gap: 14px;
       align-items: start;
-      padding: 12px;
+      padding: 14px 16px;
     }}
-    .replay-events span {{
-      color: var(--warn);
-      font-weight: 850;
+    .replay-events li > span {{
+      color: var(--fg-muted);
+      font-family: var(--mono);
+      font-weight: 600;
+    }}
+    .replay-events strong {{
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--accent-fg);
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-align: center;
+      align-self: start;
+      justify-self: start;
     }}
     .replay-events p {{
       margin: 0;
+      color: var(--fg-muted);
+      font-family: var(--mono);
+      font-size: 0.88rem;
     }}
     .checklist li {{
-      padding: 12px 14px;
+      padding: 14px 16px;
       border-left: 3px solid var(--accent);
     }}
     .backlink {{
       grid-column: 1 / -1;
-      margin: 0;
+      margin: 0 0 8px;
+      font-size: 0.88rem;
+    }}
+    .backlink a::before {{
+      content: "← ";
+      color: var(--fg-muted);
     }}
     @media (max-width: 860px) {{
       .hero,
@@ -1355,6 +1676,13 @@ fn page(title: &str, body: &str) -> String {
       }}
       .ops-snapshot {{
         grid-template-columns: 1fr;
+      }}
+      .ops-snapshot div {{
+        border-right: 0;
+        border-bottom: 1px solid var(--border-muted);
+      }}
+      .ops-snapshot div:last-child {{
+        border-bottom: 0;
       }}
       .feature-grid .metric-row {{
         margin-top: 0;
@@ -1373,18 +1701,17 @@ fn page(title: &str, body: &str) -> String {
         position: static;
         align-items: flex-start;
         flex-direction: column;
+        gap: 12px;
       }}
       .site-header nav {{
         width: 100%;
-      }}
-      .site-header nav a {{
-        min-height: 32px;
+        justify-content: flex-start;
       }}
       h1 {{
-        font-size: 2.35rem;
+        font-size: 1.9rem;
       }}
       .hero {{
-        min-height: 0;
+        padding: 18px 0 24px;
       }}
       .terminal-panel pre {{
         font-size: 0.78rem;
@@ -1397,39 +1724,16 @@ fn page(title: &str, body: &str) -> String {
       .mini-metrics {{
         grid-template-columns: 1fr;
       }}
+      .metadata div + div {{
+        border-left: 0;
+      }}
       th, td {{
         padding: 9px 10px;
       }}
     }}
-    @media (prefers-color-scheme: dark) {{
-      :root {{
-        --ink: #e7edf3;
-        --muted: #9cafbf;
-        --surface: #17222d;
-        --surface-2: #111820;
-        --line: #2b3948;
-        --accent: #8bd3dd;
-        --accent-strong: #aadfe6;
-        --warn: #d2b15f;
-      }}
-      .lede {{
-        color: #c3d0db;
-      }}
-      .site-header {{
-        background: color-mix(in srgb, var(--surface-2) 92%, transparent);
-      }}
-      .primary-action {{
-        color: #071013;
-      }}
-      .site-header nav .primary-action {{
-        color: #071013;
-      }}
-      .rank-pill {{
-        border-color: #365365;
-        background: #142b35;
-      }}
-      code {{
-        border-color: #3a4a5c;
+    @media (prefers-reduced-motion: reduce) {{
+      * {{
+        transition: none !important;
       }}
     }}
   </style>
@@ -1437,21 +1741,43 @@ fn page(title: &str, body: &str) -> String {
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
-    <a class="brand" href="/">debugpath.dev</a>
+    <div class="brand-block">
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true">$_</span>
+        <span>debugpath.dev</span>
+      </a>
+      <span class="brand-tag">SSH-native incident lab</span>
+    </div>
     <nav aria-label="primary navigation">
       <a href="/cases">Cases</a>
       <a href="/leaderboard">Leaderboard</a>
       <a href="/replays">Replays</a>
       <a href="/authoring">Authoring</a>
       <a href="/status">Status</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle color theme" title="Toggle color theme" data-theme-toggle>
+        <span class="icon icon-sun" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M8 12.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9ZM8 0a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0V.75A.75.75 0 0 1 8 0Zm0 13a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 8 13ZM2.343 2.343a.75.75 0 0 1 1.06 0l1.06 1.06a.75.75 0 1 1-1.06 1.06l-1.06-1.06a.75.75 0 0 1 0-1.06Zm9.193 9.193a.75.75 0 0 1 1.061 0l1.06 1.06a.75.75 0 1 1-1.06 1.061l-1.06-1.06a.75.75 0 0 1 0-1.061ZM16 8a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5h1.5A.75.75 0 0 1 16 8ZM3 8a.75.75 0 0 1-.75.75H.75a.75.75 0 0 1 0-1.5h1.5A.75.75 0 0 1 3 8Zm10.657-5.657a.75.75 0 0 1 0 1.06l-1.06 1.06a.75.75 0 1 1-1.061-1.06l1.06-1.06a.75.75 0 0 1 1.061 0Zm-9.193 9.193a.75.75 0 0 1 0 1.061l-1.06 1.06a.75.75 0 1 1-1.061-1.06l1.06-1.061a.75.75 0 0 1 1.061 0Z"/></svg></span>
+        <span class="icon icon-moon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M9.598 1.591a.749.749 0 0 1 .785-.175 7.001 7.001 0 1 1-8.967 8.967.75.75 0 0 1 .961-.96 5.5 5.5 0 0 0 7.046-7.046.75.75 0 0 1 .175-.786Zm1.616 1.945a7 7 0 0 1-7.678 7.678 5.499 5.499 0 1 0 7.678-7.678Z"/></svg></span>
+      </button>
       <a class="primary-action" href="/#ssh-entrypoint">SSH in now</a>
     </nav>
   </header>
   <main id="main">{}</main>
   <footer class="site-footer">
-    <span>SSH-native incident lab.</span>
+    <span>SSH-native incident lab · deterministic, inspectable, self-hostable.</span>
     <a href="/standards">Case quality standards</a>
   </footer>
+  <script>
+    (function() {{
+      var btn = document.querySelector('[data-theme-toggle]');
+      if (!btn) return;
+      btn.addEventListener('click', function() {{
+        var current = document.documentElement.getAttribute('data-theme') || 'dark';
+        var next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        try {{ localStorage.setItem('debugpath-theme', next); }} catch (e) {{}}
+      }});
+    }})();
+  </script>
 </body>
 </html>"##,
         escape_html(title),
